@@ -12,15 +12,15 @@ interface Tool {
 }
 
 const tools: Tool[] = [
-    { name: 'React', icon: 'https://cdn.simpleicons.org/react/61DAFB', bg: 'bg-[#61DAFB]/10' },
-    { name: 'Next.js', icon: 'https://cdn.simpleicons.org/nextdotjs/000000/ffffff', bg: 'bg-black dark:bg-white' },
-    { name: 'TypeScript', icon: 'https://cdn.simpleicons.org/typescript/3178C6', bg: 'bg-[#3178C6]/10' },
-    { name: 'Node.js', icon: 'https://cdn.simpleicons.org/nodedotjs/339933', bg: 'bg-[#339933]/10' },
-    { name: 'PostgreSQL', icon: 'https://cdn.simpleicons.org/postgresql/4169E1', bg: 'bg-[#4169E1]/10' }, // Center
-    { name: 'Tailwind', icon: 'https://cdn.simpleicons.org/tailwindcss/06B6D4', bg: 'bg-[#06B6D4]/10' },
-    { name: 'Framer', icon: 'https://cdn.simpleicons.org/framer/0055FF/ffffff', bg: 'bg-[#0055FF]/10' },
-    { name: 'Python', icon: 'https://cdn.simpleicons.org/python/3776AB', bg: 'bg-[#3776AB]/10' },
-    { name: 'Docker', icon: 'https://cdn.simpleicons.org/docker/2496ED', bg: 'bg-[#2496ED]/10' },
+    { name: 'Discord', icon: '/AppIcons/discord.png', bg: 'bg-[#5865F2]/10' },
+    { name: 'VS Code', icon: '/AppIcons/vscode.png', bg: 'bg-[#007ACC]/10' },
+    { name: 'Notion', icon: '/AppIcons/notion.png', bg: 'bg-black dark:bg-white' },
+    { name: 'Medium', icon: '/AppIcons/medium.png', bg: 'bg-black dark:bg-white' },
+    { name: 'Brave', icon: '/AppIcons/brave.png', bg: 'bg-[#FB542B]/10' }, // Center
+    { name: 'Framer', icon: '/AppIcons/framer.png', bg: 'bg-[#0055FF]/10' },
+    { name: 'Figma', icon: '/AppIcons/figma.png', bg: 'bg-[#0055FF]/10' },
+    { name: 'Gumroad', icon: '/AppIcons/gumroad.png', bg: 'bg-[#FF90E8]/10' },
+    { name: 'Reddit', icon: '/AppIcons/reddit.png', bg: 'bg-[#5E6AD2]/10' },
 ];
 
 export const ToolsDock: React.FC = () => {
@@ -30,7 +30,7 @@ export const ToolsDock: React.FC = () => {
 
     const headerText = "{ Crafting with my Core Tech Stack }";
     const headerChars = headerText.split('');
-    const centerIndex = 4; // PostgreSQL
+    const centerIndex = 4; // Brave
 
     useLayoutEffect(() => {
         // GSAP Context to ensure cleanup
@@ -69,7 +69,7 @@ export const ToolsDock: React.FC = () => {
                         y: 0,
                         opacity: 1,
                         rotationX: 0,
-                        scale: index === centerIndex ? 1.1 : 1,
+                        scale: index === centerIndex ? 1.3 : 1, // Increased scale for center for emphasis
                         duration: 1.5,
                         ease: "power2.out"
                     },
@@ -94,27 +94,31 @@ export const ToolsDock: React.FC = () => {
                     ))}
                 </h2>
 
-                <div className="flex items-center justify-center gap-4 md:gap-8 px-4 py-8" style={{ perspective: '1000px' }}>
+                <div className="flex items-center justify-center gap-3 md:gap-5 px-4 py-8" style={{ perspective: '1000px' }}>
                     {tools.map((tool, index) => (
                         <div
                             key={tool.name}
                             ref={(el) => { iconsRef.current[index] = el; }}
                             className={`
                             relative group
-                            w-[clamp(1.8rem,6vw,3.5rem)] h-[clamp(1.8rem,6vw,3.5rem)]
-                            rounded-lg md:rounded-lg 
+                            w-[clamp(2rem,6vw,4rem)] h-[clamp(2rem,6vw,4rem)]
+                            rounded-2xl
                             flex items-center justify-center 
-                            ${tool.bg}
-                            shadow-lg
+                            bg-white dark:bg-white/5
+                            shadow-xl
                             cursor-pointer
                             ${index === centerIndex ? 'z-10' : 'z-0'}
+                            border border-black/5 dark:border-white/10
+                            hover:border-blue-500/50 transition-colors duration-300
                         `}
                         >
-                            <div className="w-1/2 h-1/2 flex items-center justify-center">
-                                <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
-                            </div>
+                            <img
+                                src={tool.icon}
+                                alt={tool.name}
+                                className="w-full h-full object-cover rounded-2xl transform transition-transform duration-300 group-hover:scale-105"
+                            />
 
-                            <div className="absolute -bottom-10 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-gray-500 dark:text-gray-300 pointer-events-none whitespace-nowrap bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-100 dark:border-gray-700">
+                            <div className="absolute -bottom-10 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-gray-500 dark:text-gray-300 pointer-events-none whitespace-nowrap bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-100 dark:border-gray-700 z-50">
                                 {tool.name}
                             </div>
                         </div>

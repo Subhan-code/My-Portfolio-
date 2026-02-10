@@ -10,8 +10,12 @@ interface ProjectCardProps {
     link?: string;
     githubUrl?: string;
     stars?: number;
-    videoUrl: string;
+    videoUrl?: string;
+    imageUrl?: string;
     index: number;
+    isDimmed?: boolean;
+    onHover?: () => void;
+    onLeave?: () => void;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -22,7 +26,11 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     githubUrl,
     stars = 0,
     videoUrl,
-    index
+    imageUrl,
+    index,
+    isDimmed,
+    onHover,
+    onLeave
 }) => {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -35,12 +43,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         scale.set(1.02);
         y.set(-5);
         triggerHaptic(5);
+        onHover?.();
     };
 
     const handleMouseLeave = () => {
         setIsHovered(false);
         scale.set(1);
         y.set(0);
+        onLeave?.();
     };
 
     return (
@@ -52,23 +62,34 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             style={{ scale, y }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className="group relative flex flex-col w-full bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-white/5 transition-shadow duration-500 will-change-transform h-auto md:h-[420px]"
+            className={cn(
+                "group relative flex flex-col w-full bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-white/5 transition-all duration-500 will-change-transform h-auto md:h-[420px]",
+                isDimmed ? "grayscale opacity-40 blur-[1px] scale-95" : "grayscale-0 opacity-100 blur-0"
+            )}
         >
             {/* Hover Glow Effect */}
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
                 <div className="absolute inset-[-20%] bg-[radial-gradient(circle_at_var(--mouse-x,50%)_var(--mouse-y,50%),rgba(59,130,246,0.1)_0%,transparent_50%)] dark:bg-[radial-gradient(circle_at_var(--mouse-x,50%)_var(--mouse-y,50%),rgba(59,130,246,0.15)_0%,transparent_50%)]" />
             </div>
 
-            {/* Visual Media Section (Video Only) */}
+            {/* Visual Media Section (Video or Image) */}
             <div className="relative w-full h-[200px] md:h-[55%] overflow-hidden bg-gray-100 dark:bg-[#050505]">
-                <video
-                    src={videoUrl}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
+                {videoUrl ? (
+                    <video
+                        src={videoUrl}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                ) : (
+                    <img
+                        src={imageUrl}
+                        alt={title}
+                        className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                    />
+                )}
 
                 {/* Visual Polish Filter */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />

@@ -15,7 +15,21 @@ function App() {
   const [currentView, setCurrentView] = useState('home');
   const [activeArticle, setActiveArticle] = useState<string | undefined>(undefined);
   const [isDark, setIsDark] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // -- Init isLoading based on session/daily persistence --
+  const [isLoading, setIsLoading] = useState(() => {
+    // Only show preloader on the MAIN page (no hash) and ONCE every hour
+    const isMainPage = !window.location.hash || window.location.hash === '#';
+    if (!isMainPage) return false;
+
+    const lastShown = localStorage.getItem('portfolio_intro_last_shown');
+    if (!lastShown) return true;
+
+    const lastShownTime = parseInt(lastShown, 10);
+    const oneHour = 60 * 60 * 1000; // 1 hour in ms
+
+    return Date.now() - lastShownTime > oneHour;
+  });
 
   // --- Hash Handling for Persistence ---
   useEffect(() => {
@@ -25,6 +39,9 @@ function App() {
         if (hash.startsWith('article/')) {
           setCurrentView('blogs');
           setActiveArticle(hash.split('/')[1]);
+        } else if (hash.startsWith('blogs/article/')) {
+          setCurrentView('blogs');
+          setActiveArticle(hash.replace('blogs/article/', ''));
         } else {
           setCurrentView(hash);
           setActiveArticle(undefined);
@@ -76,8 +93,33 @@ function App() {
   };
 
   const handleNavigate = (view: string, articleId?: string) => {
-    // Artificial loading for view transitions
-    setIsLoading(true);
+    // Artificial loading removed for internal navigation to keep preloader only for initial load
+
+    // Special handling for Contact: Scroll to section instead of new page
+    if (view === 'contact') {
+      const scrollToContact = () => {
+        const contactSection = document.getElementById('contact');
+        if (contactSection) {
+          contactSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      };
+
+      if (currentView !== 'home') {
+        setCurrentView('home');
+        // Allow time for Home component to mount
+        setTimeout(scrollToContact, 100);
+      } else {
+        // If already on home, just scroll
+        scrollToContact();
+      }
+      // Update hash to reflect contact? Maybe just keep it as home or #contact?
+      // User just said "redirect to contact section".
+      // If we change hash to #contact, logic might try to update view?
+      // window.location.hash = 'contact'; -> this triggers hashchange listener -> logic in useEffect?
+      // The useEffect at line 20 (not shown but implied) handles hash change.
+      // If I manually handle it here, I should perhaps NOT change hash to avoid loop or just return.
+      return;
+    }
 
     // Update hash which triggers the effect
     const newHash = view === 'home' ? '' : (view + (articleId ? `/article/${articleId}` : ''));
@@ -86,17 +128,11 @@ function App() {
     } else {
       // If hash is same, just ensure state is right
       setCurrentView(view);
-      setActiveArticle(articleId);
+      setActiveArticle(articleId || null);
     }
 
     // Scroll handling
-    if (view === 'home' || view === 'projects' || view === 'blogs' || view === 'contact' || view === 'kanban') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -108,6 +144,8 @@ function App() {
           <Preloader onComplete={() => {
             console.log("Preloader completed");
             setIsLoading(false);
+            // Mark as seen with timestamp
+            localStorage.setItem('portfolio_intro_last_shown', Date.now().toString());
           }} />
         )}
       </AnimatePresence>
@@ -156,17 +194,6 @@ function App() {
       </div>
 
       {currentView !== 'home' && <Footer />}
-
-      {/* Bottom Blur Overlay - 10% height, progressive mask, max 80% opacity */}
-      <div
-        className="fixed bottom-0 left-0 w-full h-[10vh] z-50 pointer-events-none"
-        style={{
-          maskImage: 'linear-gradient(to top, black, transparent)',
-          WebkitMaskImage: 'linear-gradient(to top, black, transparent)'
-        }}
-      >
-        <div className="w-full h-full bg-gradient-to-t from-white/80 to-transparent dark:from-black/80 dark:to-transparent backdrop-blur-md" />
-      </div>
 
       <CommandPalette
         onNavigate={handleNavigate}

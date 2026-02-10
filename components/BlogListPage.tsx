@@ -45,7 +45,7 @@ export const BlogListPage: React.FC<BlogListPageProps> = ({ onNavigate, toggleTh
     const triggerRef = useRef<HTMLDivElement>(null);
 
     const handlePostClick = (id: string) => {
-        onNavigate('blog-post', id);
+        onNavigate('blogs', id);
     };
 
     return (

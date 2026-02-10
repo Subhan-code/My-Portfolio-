@@ -59,16 +59,19 @@ const EXPERIENCE_DATA = [
 
 const EXPERIMENTS_DATA = [
     {
-        title: "Kanban Board Interaction",
+        title: "Kanban Board",
         desc: "Advanced drag-and-drop mechanics with physics-based reordering and real-time state synchronization.",
         tech: "Framer Motion / DnD Kit",
-        link: "https://github.com/syedsubhan"
+        link: "#",
+        internalView: "kanban",
+        iconUrl: "https://i.pinimg.com/736x/68/58/a8/6858a8254d5de88cd6bdc168a9f0b393.jpg"
     }
 ];
 
 export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggleTheme, isDark }) => {
     const triggerRef = useRef<HTMLHeadingElement>(null);
     const [activeSection, setActiveSection] = useState<string | null>('about');
+    const [hoveredProject, setHoveredProject] = useState<number | null>(null);
 
     // Scroll Spy Logic
     useEffect(() => {
@@ -287,12 +290,13 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                                 readTime="4 min read"
                                 description="Deep dive into the next generation of user interfaces, focusing on spatial computing paradigms and the evolution of glassmorphism in modern web apps."
                                 className="block w-full"
+                                previewImage="https://i.pinimg.com/originals/62/6e/db/626edb1f706ad87f7ec2716e32132f68.gif"
                             >
                                 <ArticleItem
                                     title="The Future of Interface Design"
                                     date="Aug 12, 2024"
                                     readTime="4 min read"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(10); onNavigate('blog-post', 'interface-design'); }}
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(10); onNavigate('blogs', 'interface-design'); }}
                                 />
                             </PreviewLinkCard>
 
@@ -304,12 +308,13 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                                 readTime="7 min read"
                                 description="Practical strategies for scaling node.js microservices under high load, managing database consistency, and implementing effective caching layers."
                                 className="block w-full"
+                                previewImage="https://i.pinimg.com/originals/aa/dc/d3/aadcd3904af2dcaeb268101456bf2216.gif"
                             >
                                 <ArticleItem
                                     title="Scaling Distributed Systems"
                                     date="Sep 05, 2024"
                                     readTime="7 min read"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(10); onNavigate('blog-post', 'distributed-systems'); }}
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(10); onNavigate('blogs', 'distributed-systems'); }}
                                 />
                             </PreviewLinkCard>
                         </div>
@@ -338,36 +343,49 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                             title="Shinrai"
                             description="Cloud-Native CI/CD Platform with advanced pipeline visualization and automated deployment strategies."
                             tags={["AWS", "Docker", "Go"]}
-                            videoUrl="/videos/aizen-verse.mp4"
+                            imageUrl="https://i.pinimg.com/originals/99/ca/28/99ca287813fd0e1f689489fa9550dbcd.gif"
                             githubUrl="https://github.com/syedsubhan/shinrai"
                             stars={128}
+                            isDimmed={hoveredProject !== null && hoveredProject !== 0}
+                            onHover={() => setHoveredProject(0)}
+                            onLeave={() => setHoveredProject(null)}
                         />
                         <ProjectCard
                             index={1}
                             title="Aizen Verse"
                             description="Anime Streaming Experience featuring real-time social watching, localized subtitles, and adaptive streaming."
                             tags={["React", "Vite", "HLS.js"]}
+                            link="https://aizen-verse.vercel.app/"
                             videoUrl="/videos/aizen-verse.mp4"
                             githubUrl="https://github.com/syedsubhan/aizen"
                             stars={342}
+                            isDimmed={hoveredProject !== null && hoveredProject !== 1}
+                            onHover={() => setHoveredProject(1)}
+                            onLeave={() => setHoveredProject(null)}
                         />
                         <ProjectCard
                             index={2}
                             title="Nexus UI"
                             description="Enterprise Component Library System built for scale, accessibility, and developer experience."
                             tags={["TypeScript", "Storybook"]}
-                            videoUrl="/videos/aizen-verse.mp4"
+                            imageUrl="https://i.pinimg.com/originals/0a/d7/35/0ad735f722522d9a424b2a018ff63319.gif"
                             githubUrl="https://github.com/syedsubhan/nexus"
                             stars={89}
+                            isDimmed={hoveredProject !== null && hoveredProject !== 2}
+                            onHover={() => setHoveredProject(2)}
+                            onLeave={() => setHoveredProject(null)}
                         />
                         <ProjectCard
                             index={3}
                             title="Vortex Engine"
                             description="High-performance Physics Engine running in the browser via WebAssembly for next-gen web games."
                             tags={["C++", "WASM", "WebGL"]}
-                            videoUrl="/videos/aizen-verse.mp4"
+                            imageUrl="https://i.pinimg.com/originals/a7/7f/bf/a77fbfec380b3f63e3feb9a7df60616a.gif"
                             githubUrl="https://github.com/syedsubhan/vortex"
                             stars={1024}
+                            isDimmed={hoveredProject !== null && hoveredProject !== 3}
+                            onHover={() => setHoveredProject(3)}
+                            onLeave={() => setHoveredProject(null)}
                         />
                     </div>
 
@@ -389,26 +407,35 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
 
                 {/* --- EXPERIMENTS --- */}
                 <section id="experiments" className="mb-16 scroll-mt-32">
-                    <h2 className="text-2xl font-serif mb-8 flex items-center gap-3">
-                        <span className="animate-shimmer bg-[linear-gradient(110deg,#939393,45%,#1e1e1e,55%,#939393)] dark:bg-[linear-gradient(110deg,#939393,45%,#e5e5e5,55%,#939393)] bg-[length:200%_100%] bg-clip-text text-transparent">
-                            Secret Research Ongoing
-                        </span>
-                        <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
-                    </h2>
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                            Experiments
+                            <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
+                        </h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono tracking-wide leading-relaxed max-w-2xl">
+                            Recreating and enhancing top-tier components. Reverse-engineered with respect to original creators.
+                        </p>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {EXPERIMENTS_DATA.map((exp, idx) => (
-                            <motion.a
+                            <motion.div
                                 key={idx}
-                                href={exp.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                className="group relative p-6 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100/50 dark:border-white/5 hover:border-blue-500/30 dark:hover:border-blue-400/30 transition-all duration-500 active:scale-[0.98] overflow-hidden"
-                                onClick={() => triggerHaptic(10)}
+                                className="group relative p-6 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100/50 dark:border-white/5 hover:border-blue-500/30 dark:hover:border-blue-400/30 transition-all duration-500 active:scale-[0.98] overflow-hidden cursor-pointer"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation(); // Stop propagation to be safe
+                                    triggerHaptic(10);
+                                    if (exp.internalView) {
+                                        onNavigate(exp.internalView);
+                                    } else {
+                                        window.open(exp.link, '_blank');
+                                    }
+                                }}
                             >
                                 {/* Interactive Glow */}
                                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none" />
@@ -416,8 +443,12 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
 
                                 <div className="relative flex flex-col h-full z-10">
                                     <div className="mb-4 flex justify-between items-start">
-                                        <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                            <Beaker size={18} />
+                                        <div className="p-2 rounded-lg text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                            {exp.iconUrl ? (
+                                                <img src={exp.iconUrl} alt="icon" className="w-[40px] h-[40px] object-cover rounded-lg" />
+                                            ) : (
+                                                <Beaker size={18} />
+                                            )}
                                         </div>
                                         <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400 group-hover:text-blue-500 transition-colors">
                                             {exp.tech}
@@ -430,11 +461,17 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                                         {exp.desc}
                                     </p>
                                     <div className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        View Source <ArrowUpRight size={12} />
+                                        {exp.internalView ? "Try it now" : "View Source"} <ArrowUpRight size={12} />
                                     </div>
                                 </div>
-                            </motion.a>
+                            </motion.div>
                         ))}
+                    </div>
+
+                    <div className="mt-12 flex justify-center">
+                        <span className="animate-shimmer bg-[linear-gradient(110deg,#939393,45%,#1e1e1e,55%,#939393)] dark:bg-[linear-gradient(110deg,#939393,45%,#e5e5e5,55%,#939393)] bg-[length:200%_100%] bg-clip-text text-transparent text-2xl font-semibold">
+                            Secret Research Ongoing
+                        </span>
                     </div>
                 </section>
 
@@ -632,5 +669,3 @@ const ArticleItem = ({ title, date, readTime, onClick }: { title: string, date: 
         </div>
     </button>
 );
-
-

@@ -1,6 +1,9 @@
 import React from 'react';
 import { InterfaceDesign } from './articles/InterfaceDesign';
 import { DistributedSystems } from './articles/DistributedSystems';
+import { DesignSystems } from './articles/DesignSystems';
+import { ScrollAnimations } from './articles/ScrollAnimations';
+import { BlogListPage } from './BlogListPage';
 
 interface BlogPageProps {
   onNavigate: (view: string, id?: string) => void;
@@ -10,12 +13,21 @@ interface BlogPageProps {
 }
 
 export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate, toggleTheme, isDark, activeArticleId }) => {
-  // Simple router based on ID
-
-  if (activeArticleId === 'distributed-systems') {
-    return <DistributedSystems onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
+  // If no article ID, show the list
+  if (!activeArticleId) {
+    return <BlogListPage onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
   }
 
-  // Default
-  return <InterfaceDesign onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
+  // Router for articles
+  switch (activeArticleId) {
+    case 'distributed-systems':
+      return <DistributedSystems onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
+    case 'design-systems':
+      return <DesignSystems onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
+    case 'scroll-animations':
+      return <ScrollAnimations onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
+    default:
+      // Default / Interface Design
+      return <InterfaceDesign onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;
+  }
 };
