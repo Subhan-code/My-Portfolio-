@@ -636,7 +636,12 @@ const SocialDock = () => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        <a href={link.href} className="w-full aspect-square p-1 flex items-center justify-center">
+                        <a
+                            href={link.href}
+                            target={link.label === 'Email' ? undefined : "_blank"}
+                            rel={link.label === 'Email' ? undefined : "noopener noreferrer"}
+                            className="w-full aspect-square p-1 flex items-center justify-center"
+                        >
                             <div className="w-full h-full rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-sm hover:border-gray-300 dark:hover:border-white/20 transition-all active:scale-95">
                                 <link.icon className="w-1/2 h-1/2 text-gray-700 dark:text-gray-200" />
                             </div>
