@@ -14,10 +14,10 @@ interface Tool {
 const tools: Tool[] = [
     { name: 'Discord', icon: '/AppIcons/discord.png', bg: 'bg-[#5865F2]/10' },
     { name: 'VS Code', icon: '/AppIcons/vscode.png', bg: 'bg-[#007ACC]/10' },
-    { name: 'Notion', icon: '/AppIcons/notion.png', bg: 'bg-black dark:bg-white' },
     { name: 'Medium', icon: '/AppIcons/medium.png', bg: 'bg-black dark:bg-white' },
+    { name: 'Notion', icon: '/AppIcons/notion.png', bg: 'bg-black dark:bg-white' },
     { name: 'Brave', icon: '/AppIcons/brave.png', bg: 'bg-[#FB542B]/10' }, // Center
-    { name: 'Framer', icon: '/AppIcons/framer.png', bg: 'bg-[#0055FF]/10' },
+    { name: 'Motion.dev', icon: '/AppIcons/motion.png', bg: 'bg-[#0055FF]/10' },
     { name: 'Figma', icon: '/AppIcons/figma.png', bg: 'bg-[#0055FF]/10' },
     { name: 'Gumroad', icon: '/AppIcons/gumroad.png', bg: 'bg-[#FF90E8]/10' },
     { name: 'Reddit', icon: '/AppIcons/reddit.png', bg: 'bg-[#5E6AD2]/10' },
@@ -28,7 +28,7 @@ export const ToolsDock: React.FC = () => {
     const textRef = useRef<HTMLDivElement>(null);
     const iconsRef = useRef<Array<HTMLDivElement | null>>([]);
 
-    const headerText = "{ Crafting with my Core Tech Stack }";
+    const headerText = "{ Crafting with my Core Tools }";
     const headerChars = headerText.split('');
     const centerIndex = 4; // Brave
 
