@@ -18,17 +18,10 @@ function App() {
 
   // -- Init isLoading based on session/daily persistence --
   const [isLoading, setIsLoading] = useState(() => {
-    // Only show preloader on the MAIN page (no hash) and ONCE every hour
+    // Only show preloader on the MAIN page (no hash)
+    // It will show EVERY time the page is reloaded on the main route
     const isMainPage = !window.location.hash || window.location.hash === '#';
-    if (!isMainPage) return false;
-
-    const lastShown = localStorage.getItem('portfolio_intro_last_shown');
-    if (!lastShown) return true;
-
-    const lastShownTime = parseInt(lastShown, 10);
-    const oneHour = 60 * 60 * 1000; // 1 hour in ms
-
-    return Date.now() - lastShownTime > oneHour;
+    return isMainPage;
   });
 
   // --- Hash Handling for Persistence ---
@@ -144,8 +137,6 @@ function App() {
           <Preloader onComplete={() => {
             console.log("Preloader completed");
             setIsLoading(false);
-            // Mark as seen with timestamp
-            localStorage.setItem('portfolio_intro_last_shown', Date.now().toString());
           }} />
         )}
       </AnimatePresence>
