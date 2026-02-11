@@ -16,10 +16,12 @@ export default async function handler(req: any, res: any) {
             // Since we are using CounterAPI (which is just a counter), we essentially just increment.
             // The frontend logic (useEffect) ensures this is called once per session/mount.
 
+
+
             const response = await fetch(
                 "https://api.counterapi.dev/v2/subhan-uddins-team-2785/first-counter-2785/up",
                 {
-                    method: 'POST',
+                    method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${process.env.COUNTER_API_KEY}`

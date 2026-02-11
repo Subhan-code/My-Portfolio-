@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Eye } from 'lucide-react';
 import { LiquidMetalButton } from './ui/liquid-metal';
-import { animate } from "framer-motion";
+import NumberFlow from '@number-flow/react';
 import { getOrCreateVisitorId } from '../lib/fingerprint';
 
 export const PageVisitsFooter = () => {
   const [visits, setVisits] = useState<number>(0);
-  const [displayVisits, setDisplayVisits] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   const hasIncremented = useRef(false);
+
+  // Loading animation loop
+
 
   useEffect(() => {
     // Prevent double invocation in React.StrictMode during development
@@ -38,39 +42,35 @@ export const PageVisitsFooter = () => {
           const data = await response.json();
           console.log("Fetched visitor stats:", data);
           if (typeof data.uniqueVisitors === 'number') {
-            setVisits(data.uniqueVisitors);
+            setIsLoading(false);
+            // Delay setting the number slightly so NumberFlow mounts with 0 first, then animates.
+            setTimeout(() => setVisits(data.uniqueVisitors), 100);
           } else {
             console.warn("Unexpected API response structure:", data);
+            setIsLoading(false);
             setVisits(0);
           }
         } else {
           console.error("Failed to fetch stats:", response.status);
+          setIsLoading(false);
+          setVisits(0);
         }
       } catch (error) {
         console.error("Error tracking visitor:", error);
+        setIsLoading(false);
+        setVisits(0);
       }
     };
 
     trackAndFetchStats();
   }, []);
 
-  // Animate the display value when visits updates
-  useEffect(() => {
-    if (visits === 0) return;
 
-    const controls = animate(0, visits, {
-      duration: 1.5,
-      ease: "easeOut",
-      onUpdate: (value) => setDisplayVisits(Math.round(value))
-    });
 
-    return () => controls.stop();
-  }, [visits]);
-
-  const getOrdinal = (n: number) => {
+  const getOrdinalSuffix = (n: number) => {
     const s = ["th", "st", "nd", "rd"];
     const v = n % 100;
-    return n.toLocaleString() + (s[(v - 20) % 10] || s[v] || s[0]);
+    return (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
 
@@ -88,7 +88,13 @@ export const PageVisitsFooter = () => {
         }}
         className="scale-90 md:scale-100"
       >
-        You are the {getOrdinal(displayVisits)} visitor
+        {isLoading ? (
+          <span className="animate-pulse">Fetching signal...</span>
+        ) : (
+          <>
+            You are the <NumberFlow value={visits} format={{ useGrouping: true }} className="mx-1 inline-block" />{getOrdinalSuffix(visits)} visitor
+          </>
+        )}
       </LiquidMetalButton>
     </div>
   );
