@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Eye } from 'lucide-react';
 import { LiquidMetalButton } from './ui/liquid-metal';
+import { animate } from "framer-motion";
+import { getOrCreateVisitorId } from '../lib/fingerprint';
 
 export const PageVisitsFooter = () => {
   const [visits, setVisits] = useState<number>(0);
+  const [displayVisits, setDisplayVisits] = useState<number>(0);
   const hasIncremented = useRef(false);
 
   useEffect(() => {
@@ -11,30 +14,58 @@ export const PageVisitsFooter = () => {
     if (hasIncremented.current) return;
     hasIncremented.current = true;
 
-    const fetchAndIncrement = async () => {
+    const trackAndFetchStats = async () => {
       try {
-        // Call our internal API route which handles the external API securely
-        const response = await fetch('/api/visit');
+        const fingerprint = getOrCreateVisitorId();
+
+        // Track visit (POST)
+        await fetch('/api/visitors', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fingerprint }),
+          cache: 'no-store'
+        });
+
+        // Fetch stats (GET)
+        const response = await fetch('/api/visitors', {
+          method: 'GET',
+          cache: 'no-store'
+        });
 
         if (response.ok) {
           const data = await response.json();
-          if (typeof data.count === 'number') {
-            setVisits(data.count);
+          console.log("Fetched visitor stats:", data);
+          if (typeof data.uniqueVisitors === 'number') {
+            setVisits(data.uniqueVisitors);
           } else {
-            console.warn("Unexpected internal API response:", data);
+            console.warn("Unexpected API response structure:", data);
             setVisits(0);
           }
         } else {
-          console.error("Internal API failed:", response.status);
-          // Silent fail or retry logic could go here
+          console.error("Failed to fetch stats:", response.status);
         }
       } catch (error) {
-        console.error("Error fetching visit count:", error);
+        console.error("Error tracking visitor:", error);
       }
     };
 
-    fetchAndIncrement();
+    trackAndFetchStats();
   }, []);
+
+  // Animate the display value when visits updates
+  useEffect(() => {
+    if (visits === 0) return;
+
+    const controls = animate(0, visits, {
+      duration: 1.5,
+      ease: "easeOut",
+      onUpdate: (value) => setDisplayVisits(Math.round(value))
+    });
+
+    return () => controls.stop();
+  }, [visits]);
 
   const getOrdinal = (n: number) => {
     const s = ["th", "st", "nd", "rd"];
@@ -42,9 +73,6 @@ export const PageVisitsFooter = () => {
     return n.toLocaleString() + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  //   if (visits === null) {
-  //     return null; 
-  //   }
 
   return (
     <div className="flex justify-center items-center pointer-events-auto relative z-20">
@@ -60,7 +88,7 @@ export const PageVisitsFooter = () => {
         }}
         className="scale-90 md:scale-100"
       >
-        You are the {getOrdinal(visits)} visitor
+        You are the {getOrdinal(displayVisits)} visitor
       </LiquidMetalButton>
     </div>
   );
