@@ -25,6 +25,7 @@ import { SkillIcon } from './ui/SkillIcon';
 import { WorkTimeline } from './ui/WorkTimeline';
 import { VerifiedBadge } from './ui/NativeVerifiedBadge';
 import { LocationIndicator } from './ui/LocationIndicator';
+import { ScrollFillText } from './ui/ScrollFillText';
 
 interface PortfolioHomeProps {
     onNavigate: (view: string, id?: string) => void;
@@ -203,7 +204,7 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                                     </div>
                                     <h1 ref={triggerRef} className="text-3xl md:text-4xl font-serif font-medium text-gray-900 dark:text-white mb-2 leading-tight text-balance flex flex-wrap items-center gap-2">
                                         Hi, I'm Syed Subhan
-                                        <img src="/Twitter_Verified_Badge.svg.png" alt="Verified" className="w-6 h-6 object-contain" />
+                                        <img src="/Twitter_Verified_Badge.svg.png" alt="Verified" className="w-[22px] h-[22px] md:w-[26px] md:h-[26px] mt-1.5 object-contain" />
                                     </h1>
 
                                     {/* Typewriter Role Text */}
@@ -250,7 +251,9 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                 </section>
 
                 {/* --- PHILOSOPHY REVEAL --- */}
-                {/* TextRevealSection removed */}
+                {/* --- PHILOSOPHY REVEAL --- */}
+                {/* Moved to bottom */}
+
 
                 {/* --- SKILLS --- */}
                 <section id="skills" className="mb-4 scroll-mt-32">
@@ -404,6 +407,11 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                         </NativeMagnetic>
                     </div>
                 </section>
+
+                {/* --- PHILOSOPHY REVEAL (Moved here) --- */}
+                <div className="mb-16">
+                    <ScrollFillText />
+                </div>
 
                 {/* --- EXPERIMENTS --- */}
                 <section id="experiments" className="mb-16 scroll-mt-32">
