@@ -16,6 +16,7 @@ import { NativeTypewriter } from './ui/NativeTypewriter';
 
 import { PageVisitsFooter } from './PageVisitsFooter';
 import { NativeMagnetic } from './ui/NativeMagnetic';
+import profilePic from '../XPFP.jpg';
 import { SKILLS } from './ArraySkills';
 import { ProjectCard } from './ui/ProjectCard'; // Import new ProjectCard
 import { PreviewLinkCard } from './ui/PreviewLinkCard';
@@ -174,7 +175,7 @@ export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggle
                         >
                             <div className="aspect-square w-full rounded-2xl border border-gray-200 dark:border-white/10 p-1 bg-white dark:bg-[#111] shadow-xl overflow-hidden pointer-events-none select-none">
                                 <img
-                                    src="https://pbs.twimg.com/profile_images/1729198871346323456/WZ2ZyTh6_400x400.jpg"
+                                    src={profilePic}
                                     alt="Profile"
                                     className="w-full h-full rounded-xl object-cover pointer-events-none"
                                 />
