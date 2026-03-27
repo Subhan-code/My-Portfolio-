@@ -10,6 +10,7 @@ import { Preloader } from './components/Preloader';
 import { KanbanBoard } from './components/KanbanBoard';
 import { CommandPalette } from './components/CommandPalette';
 import { ExperimentsPage } from './components/ExperimentsPage';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   const [currentView, setCurrentView] = useState('home');
@@ -191,6 +192,8 @@ function App() {
         toggleTheme={toggleTheme}
         isDark={isDark}
       />
+
+      <Analytics />
 
     </div>
 
