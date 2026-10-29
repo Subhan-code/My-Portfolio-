@@ -30,7 +30,7 @@ const sizes = {
     icon: "h-10 w-10"
 };
 
-const customEase = [0.4, 0, 0.2, 1]; // Asymmetrical ease as requested
+const customEase: [number, number, number, number] = [0.4, 0, 0.2, 1]; // Asymmetrical ease as requested
 
 export const CopyButton: React.FC<CopyButtonProps> = ({
     content,
@@ -77,7 +77,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
             {...props}
         >
             {/* Render text/children if provided */}
-            {props.children}
+            {props.children as React.ReactNode}
 
             <AnimatePresence mode="wait" initial={false}>
                 {copied ? (

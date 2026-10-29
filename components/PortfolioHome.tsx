@@ -1,567 +1,154 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, Github, Eye, ArrowRight, FileText, ChevronDown, ChevronRight, Beaker, Copy, Check } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Copy, Check, Github } from 'lucide-react';
 
 import { cn, triggerHaptic } from '../lib/utils';
-import { ScrollReveal } from './ScrollReveal';
-import { DynamicNavigation } from './DynamicNavigation';
-import Timeline from './Timeline';
-import RunStatsStacks from './RunStatsStacks';
-import LabelIndicatorCarousel from './LabelIndicatorCarousel';
-import { ToolsDock } from './ui/ToolsDock';
-
-import { RainbowButton } from './RainbowButton';
-import { NativeTypewriter } from './ui/NativeTypewriter';
-
-
-import { PageVisitsFooter } from './PageVisitsFooter';
-import { NativeMagnetic } from './ui/NativeMagnetic';
 import profilePic from '../XPFP.jpg';
-import { SKILLS } from './ArraySkills';
-import { ProjectCard } from './ui/ProjectCard'; // Import new ProjectCard
-import { PreviewLinkCard } from './ui/PreviewLinkCard';
-import { SkillsMarquee } from './ui/SkillsMarquee';
-import { GitHubStarsButton } from './ui/GitHubStarsButton';
-import { SkillIcon } from './ui/SkillIcon';
-import { WorkTimeline } from './ui/WorkTimeline';
-import { VerifiedBadge } from './ui/NativeVerifiedBadge';
+import { revealVariants, staggerVariants, EASE_OUT, FADE_IN } from '../lib/motion';
+import { DynamicNavigation } from './DynamicNavigation';
+import { PageVisitsFooter } from './PageVisitsFooter';
 import { LocationIndicator } from './ui/LocationIndicator';
+import { BlurShimmerText } from './ui/BlurShimmerText';
 import { ScrollFillText } from './ui/ScrollFillText';
+import { SectionTitle, Chevron, BlogCard, T_DISPLAY, T_TITLE, T_BODY, T_META, DARK_CARD, LINK_UNDERLINE, trackSpotlight, SpotlightLayer } from './ui/AppleSection';
+import { POSTS } from '../lib/posts';
+import { ProjectBento, type BentoProject } from './ui/ProjectBento';
+import { ProjectCite, Words, wordCount } from './ui/ProjectCite';
+import { useGithubStars, AMICRO_REPO, AMICRO_STARS } from '../lib/stars';
+import { HandNote } from './ui/HandNote';
+import { ToolsDock } from './ui/ToolsDock';
+import { LoveHeart } from './ui/LoveHeart';
+import { BlockReveal } from './ui/BlockReveal';
+import { NameWave } from './ui/NameWave';
+import { toast } from './ui/Toast';
+import { TooltipCard } from './ui/Tooltip';
+import { SnapRow } from './ui/SnapRow';
+import {
+    AmicroVisual,
+    MonochartsVisual,
+    AizenVerseVisual,
+    OxygenVisual,
+} from './ui/ProjectVisuals';
 
 interface PortfolioHomeProps {
     onNavigate: (view: string, id?: string) => void;
     toggleTheme: () => void;
     isDark: boolean;
+    /** False while the preloader covers the page — hold the entrance until it lifts */
+    introReady?: boolean;
 }
 
 const SECTIONS = [
     { id: 'about', title: 'About' },
-    { id: 'work', title: 'Work Experience' },
-    { id: 'skills', title: 'Tech Stack' },
+    { id: 'work', title: 'Work' },
     { id: 'articles', title: 'Articles' },
     { id: 'projects', title: 'Projects' },
-    { id: 'experiments', title: 'Experiments' },
+    { id: 'lab', title: 'Experiments' },
     { id: 'contact', title: 'Contact' },
 ];
 
-const EXPERIENCE_DATA = [
+const WORK = [
     {
-        role: "AI/ML Intern",
-        company: "IBM SkillsBuild",
-        date: "Jun 2024 - Jul 2024",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/IBM_logo.svg/1200px-IBM_logo.svg.png",
-        desc: "Gained hands-on experience in Artificial Intelligence and Machine Learning, developing practical solutions for real-world problems.",
+        name: 'US-based product company',
+        role: 'Design Engineer',
+        dates: 'Present',
+        desc: 'Building interfaces, motion and component systems.',
+    },
+    {
+        name: 'IBM SkillsBuild',
+        role: 'AI/ML Intern',
+        dates: 'Jun–Jul 2024',
+        desc: 'Built and deployed an AI chatbot using IBM Watson Assistant, reducing manual query workload by ~40%.',
         details: [
-            "Built and deployed an AI chatbot using IBM Watson Assistant, reducing manual query workload by ~40%.",
-            "Developed a Diabetes Prediction ML model achieving 75% accuracy using supervised learning on healthcare datasets.",
-            "Deployed cloud-hosted components improving accessibility and model uptime."
-        ]
-    }
+            'Developed a Diabetes Prediction ML model achieving 75% accuracy.',
+        ],
+    },
 ];
 
-const EXPERIMENTS_DATA = [
-    {
-        title: "Kanban Board",
-        desc: "Advanced drag-and-drop mechanics with physics-based reordering and real-time state synchronization.",
-        tech: "Framer Motion / DnD Kit",
-        link: "#",
-        internalView: "kanban",
-        iconUrl: "https://i.pinimg.com/736x/68/58/a8/6858a8254d5de88cd6bdc168a9f0b393.jpg"
-    }
+// The best four, laid out as a bento: wide + narrow, then narrow + wide
+const PROJECTS: BentoProject[] = [
+    { name: 'Amicro', detail: 'Micro-interactions. {stars} stars.', href: 'https://amicro.dev', media: <AmicroVisual /> },
+    { name: 'Oxygen UI', detail: 'Solana primitives.', href: 'https://oxygenui.xyz', media: <OxygenVisual /> },
+    { name: 'Monocharts', detail: 'Charts for React.', href: 'https://github.com/Subhan-code/Monocharts', media: <MonochartsVisual /> },
+    { name: 'Aizen Verse', detail: 'Anime streaming.', href: 'https://aizen-verse.vercel.app/', media: <AizenVerseVisual /> },
 ];
 
-export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggleTheme, isDark }) => {
-    const triggerRef = useRef<HTMLHeadingElement>(null);
-    const [activeSection, setActiveSection] = useState<string | null>('about');
-    const [hoveredProject, setHoveredProject] = useState<number | null>(null);
+// The bio, in pieces around its live parts (the clock and the two projects), and the
+// running word index where each piece starts, for the word-by-word blur-in
+const BIO = ['Design Engineer', ', building interfaces and component systems in the open. Creator of'] as const;
+const W = (() => {
+    const at = [0, wordCount(BIO[0])];          // bio start, the clock
+    at.push(at[1] + 1 + wordCount(BIO[1]));     // Amicro
+    at.push(at[2] + 1);                         // "and"
+    at.push(at[3] + 1);                         // Oxygen UI
+    at.push(at[4] + 2);                         // the full stop
+    at.push(at[5] + 1);                         // total
+    return at;
+})();
 
-    // Scroll Spy Logic
-    useEffect(() => {
-        const observerOptions = {
-            root: null,
-            rootMargin: '-40% 0px -40% 0px',
-            threshold: 0
-        };
+// One quiet column: the same gap after every section
+const SECTION_SPACE = "pb-11 md:pb-12 scroll-mt-24";
+// Hover effects only where a real pointer exists; touch gets the plain list
+const CAN_HOVER = "[@media(hover:hover)_and_(pointer:fine)]";
 
-        const handleIntersect = (entries: IntersectionObserverEntry[]) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    setActiveSection(entry.target.id);
-                }
-            });
-        };
 
-        const observer = new IntersectionObserver(handleIntersect, observerOptions);
+/* --- Experiments & Components: rounded Apple cards with a tiny live preview --- */
 
-        SECTIONS.forEach(({ id }) => {
-            const element = document.getElementById(id);
-            if (element) observer.observe(element);
-        });
-
-        return () => observer.disconnect();
-    }, []);
-
-    const scrollToSection = (id: string) => {
-        triggerHaptic(5);
-        const element = document.getElementById(id);
-        if (element) {
-            const offset = 120;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - offset;
-            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-            setActiveSection(id);
-        }
-    };
-
-    const handleNavWithHaptic = (view: string) => {
-        triggerHaptic(10);
-        onNavigate(view);
-    };
-
-    // Safe safe skills to prevent crash if import fails or undefined
-    const safeSkills = Array.isArray(SKILLS) ? SKILLS : [];
-
-    return (
-        <>
-            <DynamicNavigation
-                triggerRef={triggerRef}
-                toggleTheme={toggleTheme}
-                isDark={isDark}
-                sections={SECTIONS}
-                activeSectionId={activeSection}
-                onSectionClick={scrollToSection}
-                onNavigate={onNavigate}
-                currentView="home"
-                enableIsland={true}
-                shouldHideDock={activeSection === 'contact'}
-            />
-
-            {/* Timeline Sidebar (Desktop Only) */}
-            <Timeline
-                sections={SECTIONS}
-                activeId={activeSection}
-                onSectionClick={scrollToSection}
-            />
-
-            {/* --- BACKGROUND EFFECTS: Blue God Rays & Lighting (Extremely Subtle) --- */}
-            <div className="absolute top-0 left-0 w-full h-[400px] z-0 overflow-hidden pointer-events-none select-none">
-                {/* Main Blue Glow at Top Center - Reduced intensity significantly */}
-                <div className="absolute -top-[350px] left-1/2 -translate-x-1/2 w-[80vw] md:w-[600px] h-[400px] bg-blue-500/5 dark:bg-blue-600/5 blur-[60px] rounded-[100%] mix-blend-screen opacity-20" />
-
-                {/* God Rays / Conic Light Effect - Barely visible hint */}
-                <div className="absolute -top-[250px] left-1/2 -translate-x-1/2 w-[100vw] h-[500px] bg-[conic-gradient(from_0deg_at_50%_-10%,transparent_45%,rgba(59,130,246,0.02)_49%,rgba(59,130,246,0.02)_51%,transparent_55%)] opacity-10 blur-3xl dark:opacity-5" />
-
-                {/* Subtle Highlight Beam - Top line only */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[150px] bg-gradient-to-b from-blue-50/10 to-transparent dark:from-blue-500/5 dark:to-transparent blur-[40px] opacity-20 pointer-events-none" />
+const KanbanPreview = () => (
+    <div aria-hidden className="flex gap-2 h-full">
+        {[3, 2, 1].map((n, col) => (
+            <div key={col} className="flex-1 rounded-[10px] bg-white/[0.04] p-1.5 flex flex-col gap-1.5">
+                {Array.from({ length: n }).map((_, i) => (
+                    <span
+                        key={i}
+                        className={cn(
+                            "h-4 rounded-[5px] bg-white/[0.12] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                            // One card lifts and slides a column over on hover
+                            col === 0 && i === 0 && `${CAN_HOVER}:group-hover:translate-x-[calc(100%+0.5rem)] ${CAN_HOVER}:group-hover:-translate-y-0.5 ${CAN_HOVER}:group-hover:bg-white/30`
+                        )}
+                    />
+                ))}
             </div>
+        ))}
+    </div>
+);
 
-            <main className="max-w-4xl mx-auto px-6 pt-12 md:pt-40 pb-6 relative z-10">
+const ComponentsPreview = () => (
+    <div aria-hidden className="h-full flex items-center justify-center gap-3 sm:gap-4">
+        <span className="relative inline-flex h-5 w-9 rounded-full bg-white/15 transition-colors duration-500 group-hover:bg-white/40">
+            <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-4" />
+        </span>
+        <span className="px-3 py-1.5 rounded-full bg-white text-black text-[11px] font-medium">
+            Button
+        </span>
+    </div>
+);
 
-                {/* --- HERO / ABOUT SECTION --- */}
-                <section id="about" className="mb-16 scroll-mt-32">
-                    <div className="flex flex-col md:flex-row justify-between items-start gap-8 md:gap-10">
+const LabCard = ({ title, preview, onSelect, index }: {
+    title: string; preview: React.ReactNode; onSelect: () => void; index: number;
+}) => (
+    <motion.button
+        type="button"
+        onClick={() => { triggerHaptic(10); onSelect(); }}
+        {...FADE_IN}
+        onMouseMove={trackSpotlight}
+        className={cn("group text-left flex flex-col p-2 sm:p-3 overflow-hidden select-none", DARK_CARD)}
+    >
+        <SpotlightLayer />
+        <div className="relative z-[2] h-24 sm:h-28 rounded-[14px] bg-black/40 p-2.5 sm:p-3 overflow-hidden">{preview}</div>
+        <span className={cn(T_BODY, "relative z-[2] px-2 sm:px-3 pt-3 sm:pt-3.5 pb-1 sm:pb-1.5 font-medium text-neutral-50 flex items-center justify-between")}>
+            {title}
+            {/* Arrow slides in on hover */}
+            <Chevron className="w-3 h-3 text-[#a1a1a1] -translate-x-0.5 transition-[color,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] [@media(hover:hover)_and_(pointer:fine)]:group-hover:text-white [@media(hover:hover)_and_(pointer:fine)]:group-hover:translate-x-0" />
+        </span>
+    </motion.button>
+);
 
-                        {/* Profile Picture - Top on mobile, Right on desktop */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            drag
-                            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                            dragElastic={0.2}
-                            whileHover={{ scale: 1.05, cursor: "grab" }}
-                            whileDrag={{ cursor: "grabbing", scale: 1.1 }}
-                            className="relative shrink-0 w-24 md:w-[180px] md:order-last z-20 touch-none"
-                        >
-                            <div className="aspect-square w-full rounded-2xl border border-gray-200 dark:border-white/10 p-1 bg-white dark:bg-[#111] shadow-xl overflow-hidden pointer-events-none select-none">
-                                <img
-                                    src={profilePic}
-                                    alt="Profile"
-                                    className="w-full h-full rounded-xl object-cover pointer-events-none"
-                                />
-                                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black font-serif text-[10px] border-2 border-white dark:border-black shadow-lg">
-                                    S
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Text Content */}
-                        <div className="flex-1 flex flex-col justify-between self-stretch">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5 }}
-                                className="flex flex-col h-full"
-                            >
-                                <div>
-                                    <div className="mb-4">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/5 border border-emerald-500/10 backdrop-blur-sm transition-all hover:bg-emerald-500/10">
-                                            <div className="relative flex items-center justify-center">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse relative z-10" />
-                                                <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-20 duration-1000" />
-                                            </div>
-                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 tracking-wide">Available for new projects</span>
-                                        </div>
-                                    </div>
-                                    <h1 ref={triggerRef} className="text-3xl md:text-4xl font-serif font-medium text-gray-900 dark:text-white mb-2 leading-tight text-balance flex flex-wrap items-center gap-2">
-                                        Hi, I'm Syed Subhan
-                                        <img src="/Twitter_Verified_Badge.svg.png" alt="Verified" className="w-[22px] h-[22px] md:w-[26px] md:h-[26px] mt-1.5 object-contain" />
-                                    </h1>
-
-                                    {/* Typewriter Role Text */}
-                                    <div className="mb-2 h-10 md:h-12 flex items-center">
-                                        <NativeTypewriter
-                                            content={[
-                                                "Full Stack Developer",
-                                                "Data Scientist",
-                                                "UI/UX Designer",
-                                                "Creative Developer",
-                                                "Problem Solver",
-                                                "Entrepreneur"
-                                            ]}
-                                            speed="medium"
-                                            loop={true}
-                                            className="text-lg md:text-2xl font-bold text-gray-400 dark:text-gray-500"
-                                        />
-                                    </div>
-
-                                    <div className="prose dark:prose-invert prose-gray max-w-lg mb-6">
-                                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm md:text-base text-pretty">
-                                            Building polished digital experiences <LocationIndicator />. Currently a developer combining engineering rigor with creative design.
-                                        </p>
-                                    </div>
-                                </div>
-
-
-                            </motion.div>
-                        </div>
-                    </div>
-                </section>
-
-
-
-                {/* --- WORK EXPERIENCE --- */}
-                <section id="work" className="mb-16 scroll-mt-32">
-                    <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                        Career Path
-                        <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
-                    </h2>
-                    <div className="flex flex-col">
-                        <WorkTimeline items={EXPERIENCE_DATA} />
-                    </div>
-                </section>
-
-                {/* --- PHILOSOPHY REVEAL --- */}
-                {/* --- PHILOSOPHY REVEAL --- */}
-                {/* Moved to bottom */}
-
-
-                {/* --- SKILLS --- */}
-                <section id="skills" className="mb-4 scroll-mt-32">
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-                            Tech Stack
-                            <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
-                        </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono tracking-wide">
-                            The arsenal for building digital experiences.
-                        </p>
-                    </div>
-                    <div className="w-full -mx-6 md:-mx-0 overflow-hidden mb-12">
-                        <SkillsMarquee skills={safeSkills} />
-                    </div>
-
-                    {/* Integrated Tools Section */}
-                    <div className="mt-0">
-                        <ToolsDock />
-                    </div>
-                </section>
-
-                {/* --- ARTICLES --- */}
-                <section id="articles" className="mb-16 scroll-mt-32">
-                    <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                        Articles
-                        <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
-                    </h2>
-                    <div className="space-y-6">
-                        {/* Wrapped in PreviewLinkCard for hover effect */}
-                        <div className='flex flex-col gap-4'>
-                            <PreviewLinkCard
-                                href="/blogs"
-                                title="The Future of Interface Design"
-                                subtitle="Exploring spatial computing and glassmorphism"
-                                date="Aug 12, 2024"
-                                readTime="4 min read"
-                                description="Deep dive into the next generation of user interfaces, focusing on spatial computing paradigms and the evolution of glassmorphism in modern web apps."
-                                className="block w-full"
-                                previewImage="https://i.pinimg.com/originals/62/6e/db/626edb1f706ad87f7ec2716e32132f68.gif"
-                            >
-                                <ArticleItem
-                                    title="The Future of Interface Design"
-                                    date="Aug 12, 2024"
-                                    readTime="4 min read"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(10); onNavigate('blogs', 'interface-design'); }}
-                                />
-                            </PreviewLinkCard>
-
-                            <PreviewLinkCard
-                                href="/blogs"
-                                title="Scaling Distributed Systems"
-                                subtitle="Lessons learned from high-traffic architecture"
-                                date="Sep 05, 2024"
-                                readTime="7 min read"
-                                description="Practical strategies for scaling node.js microservices under high load, managing database consistency, and implementing effective caching layers."
-                                className="block w-full"
-                                previewImage="https://i.pinimg.com/originals/aa/dc/d3/aadcd3904af2dcaeb268101456bf2216.gif"
-                            >
-                                <ArticleItem
-                                    title="Scaling Distributed Systems"
-                                    date="Sep 05, 2024"
-                                    readTime="7 min read"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(10); onNavigate('blogs', 'distributed-systems'); }}
-                                />
-                            </PreviewLinkCard>
-                        </div>
-                    </div>
-                    <div className="mt-8 flex justify-center">
-                        <NativeMagnetic>
-                            <button onClick={() => handleNavWithHaptic('blogs')} className="group flex items-center gap-2 px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors active:scale-95">
-                                See more articles
-                                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        </NativeMagnetic>
-                    </div>
-                </section>
-
-                {/* --- PROJECTS --- */}
-                <section id="projects" className="mb-16 scroll-mt-32">
-                    <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-8 flex items-center gap-3">
-                        Selected Projects
-                        <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
-                    </h2>
-
-                    {/* Grid of 4 Projects - Professional Apple Style */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <ProjectCard
-                            index={0}
-                            title="Shinrai"
-                            description="Cloud-Native CI/CD Platform with advanced pipeline visualization and automated deployment strategies."
-                            tags={["AWS", "Docker", "Go"]}
-                            imageUrl="https://i.pinimg.com/originals/99/ca/28/99ca287813fd0e1f689489fa9550dbcd.gif"
-                            githubUrl="https://github.com/syedsubhan/shinrai"
-                            stars={128}
-                            isDimmed={hoveredProject !== null && hoveredProject !== 0}
-                            onHover={() => setHoveredProject(0)}
-                            onLeave={() => setHoveredProject(null)}
-                        />
-                        <ProjectCard
-                            index={1}
-                            title="Aizen Verse"
-                            description="Anime Streaming Experience featuring real-time social watching, localized subtitles, and adaptive streaming."
-                            tags={["React", "Vite", "HLS.js"]}
-                            link="https://aizen-verse.vercel.app/"
-                            videoUrl="/videos/aizen-verse.mp4"
-                            githubUrl="https://github.com/syedsubhan/aizen"
-                            stars={342}
-                            isDimmed={hoveredProject !== null && hoveredProject !== 1}
-                            onHover={() => setHoveredProject(1)}
-                            onLeave={() => setHoveredProject(null)}
-                        />
-                        <ProjectCard
-                            index={2}
-                            title="Nexus UI"
-                            description="Enterprise Component Library System built for scale, accessibility, and developer experience."
-                            tags={["TypeScript", "Storybook"]}
-                            imageUrl="https://i.pinimg.com/originals/0a/d7/35/0ad735f722522d9a424b2a018ff63319.gif"
-                            githubUrl="https://github.com/syedsubhan/nexus"
-                            stars={89}
-                            isDimmed={hoveredProject !== null && hoveredProject !== 2}
-                            onHover={() => setHoveredProject(2)}
-                            onLeave={() => setHoveredProject(null)}
-                        />
-                        <ProjectCard
-                            index={3}
-                            title="Vortex Engine"
-                            description="High-performance Physics Engine running in the browser via WebAssembly for next-gen web games."
-                            tags={["C++", "WASM", "WebGL"]}
-                            imageUrl="https://i.pinimg.com/originals/a7/7f/bf/a77fbfec380b3f63e3feb9a7df60616a.gif"
-                            githubUrl="https://github.com/syedsubhan/vortex"
-                            stars={1024}
-                            isDimmed={hoveredProject !== null && hoveredProject !== 3}
-                            onHover={() => setHoveredProject(3)}
-                            onLeave={() => setHoveredProject(null)}
-                        />
-                    </div>
-
-                    <div className="mt-12 flex justify-center">
-                        <p className="text-sm font-mono font-medium animate-shimmer bg-[linear-gradient(110deg,#939393,45%,#1e1e1e,55%,#939393)] dark:bg-[linear-gradient(110deg,#939393,45%,#e5e5e5,55%,#939393)] bg-[length:200%_100%] bg-clip-text text-transparent">
-                            Cooking more...
-                        </p>
-                    </div>
-
-                    <div className="mt-4 flex justify-center">
-                        <NativeMagnetic>
-                            <button onClick={() => handleNavWithHaptic('projects')} className="group flex items-center gap-2 px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors active:scale-95">
-                                View all projects
-                                <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                            </button>
-                        </NativeMagnetic>
-                    </div>
-                </section>
-
-                {/* --- PHILOSOPHY REVEAL (Moved here) --- */}
-                <div className="mb-16">
-                    <ScrollFillText />
-                </div>
-
-                {/* --- EXPERIMENTS --- */}
-                <section id="experiments" className="mb-16 scroll-mt-32">
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-                            Experiments
-                            <div className="h-[1px] flex-1 bg-gray-200 dark:bg-white/10" />
-                        </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono tracking-wide leading-relaxed max-w-2xl">
-                            Recreating and enhancing top-tier components. Reverse-engineered with respect to original creators.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {EXPERIMENTS_DATA.map((exp, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                className="group relative p-6 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100/50 dark:border-white/5 hover:border-blue-500/30 dark:hover:border-blue-400/30 transition-all duration-500 active:scale-[0.98] overflow-hidden cursor-pointer"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation(); // Stop propagation to be safe
-                                    triggerHaptic(10);
-                                    if (exp.internalView) {
-                                        onNavigate(exp.internalView);
-                                    } else {
-                                        window.open(exp.link, '_blank');
-                                    }
-                                }}
-                            >
-                                {/* Interactive Glow */}
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none" />
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-xl bg-blue-500/5 -z-10" />
-
-                                <div className="relative flex flex-col h-full z-10">
-                                    <div className="mb-4 flex justify-between items-start">
-                                        <div className="p-2 rounded-lg text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                            {exp.iconUrl ? (
-                                                <img src={exp.iconUrl} alt="icon" className="w-[40px] h-[40px] object-cover rounded-lg" />
-                                            ) : (
-                                                <Beaker size={18} />
-                                            )}
-                                        </div>
-                                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-gray-400 group-hover:text-blue-500 transition-colors">
-                                            {exp.tech}
-                                        </span>
-                                    </div>
-                                    <h3 className="text-lg font-serif font-medium text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        {exp.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3">
-                                        {exp.desc}
-                                    </p>
-                                    <div className="mt-auto pt-4 flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {exp.internalView ? "Try it now" : "View Source"} <ArrowUpRight size={12} />
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <div className="mt-12 flex justify-center">
-                        <span className="animate-shimmer bg-[linear-gradient(110deg,#939393,45%,#1e1e1e,55%,#939393)] dark:bg-[linear-gradient(110deg,#939393,45%,#e5e5e5,55%,#939393)] bg-[length:200%_100%] bg-clip-text text-transparent text-2xl font-semibold">
-                            Secret Research Ongoing
-                        </span>
-                    </div>
-                </section>
-
-
-
-                {/* --- PAGE VISITS (Above Contact) --- */}
-                <div className="mb-8">
-                    <PageVisitsFooter />
-                </div>
-
-                {/* --- CONTACT --- */}
-                <section id="contact" className="mb-0 scroll-mt-32 pb-0">
-                    <div className="flex flex-col items-center text-center">
-
-                        {/* Socials Label - Moved above */}
-                        <div className="mb-6">
-                            <span className="px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-[10px] font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase">
-                                Socials
-                            </span>
-                        </div>
-
-                        {/* Heading */}
-                        <h2 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-6">
-                            Let's build something extraordinary
-                        </h2>
-
-                        {/* Single Line Handwritten Text */}
-                        <p className="font-handwriting text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-12  origin-center">
-                            DM me on X or Drop a Mail
-                        </p>
-
-                        {/* Social Dock */}
-                        <div className="relative z-10 mb-8">
-                            <SocialDock />
-                        </div>
-
-                        {/* Footer Credit */}
-                        <div className="mt-0 mb-0 w-full">
-                            {/* Quote */}
-                            <div className="mb-8 text-center">
-                                <p className="font-serif italic text-sm md:text-base text-gray-400 dark:text-gray-500">
-                                    "The details are not the details. They make the design."
-                                </p>
-                            </div>
-
-                            {/* Split Layout */}
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full border-t border-gray-100 dark:border-white/5 pt-6">
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5 opacity-90 order-2 md:order-1">
-                                    Built with love by
-                                    <span
-                                        className="relative font-semibold text-gray-900 dark:text-white group cursor-pointer inline-block"
-                                        onClick={() => triggerHaptic(10)}
-                                    >
-                                        Syed Subhan
-                                    </span>
-                                    <span className="hover:animate-pulse transition-transform cursor-default">🫶</span>
-                                </p>
-                                <div className="text-sm font-medium text-gray-600 dark:text-gray-400 tracking-wide order-1 md:order-2">
-                                    © {new Date().getFullYear()}. Engineered with Soul.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-            </main>
-        </>
-    );
-};
-
-// --- Sub Components ---
+/* --- Original footer pieces: icon dock with email copy --- */
 
 const XIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
         <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.294 19.497h2.039L6.486 3.24H4.298l13.309 17.41z" />
-    </svg>
-);
-
-const LinkedInIcon = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
     </svg>
 );
 
@@ -577,7 +164,6 @@ const SocialDock = () => {
 
     const socialLinks = [
         { icon: XIcon, label: "Twitter", href: "https://x.com/intent/user?screen_name=SubhanHQ" },
-        { icon: LinkedInIcon, label: "LinkedIn", href: "https://www.linkedin.com/in/subhan-uddin/" },
         { icon: GmailIcon, label: "Email", href: "mailto:syednotion@gmail.com" },
         { icon: Github, label: "GitHub", href: "https://github.com/Subhan-code" }
     ];
@@ -588,9 +174,11 @@ const SocialDock = () => {
         navigator.clipboard.writeText('syednotion@gmail.com');
         setCopied(true);
         triggerHaptic(15);
+        toast('Email copied');
         setTimeout(() => setCopied(false), 2000);
     };
 
+    // Neighbours swell with the hovered icon, like the macOS dock
     const getWidth = (index: number) => {
         const baseWidth = 56;
         if (hoveredIndex === null) return baseWidth;
@@ -599,6 +187,7 @@ const SocialDock = () => {
         if (distance === 1) return 60;
         return baseWidth;
     };
+
     return (
         <div className="flex justify-center items-end h-[70px] pb-2">
             <ul className="flex items-end gap-2 list-none m-0 p-0">
@@ -613,46 +202,46 @@ const SocialDock = () => {
                     >
                         <AnimatePresence>
                             {hoveredIndex === index && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.8, x: "-50%" }}
-                                    animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
-                                    exit={{ opacity: 0, y: 5, scale: 0.9, x: "-50%" }}
-                                    transition={{ duration: 0.15 }}
-                                    className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-medium rounded-md whitespace-nowrap z-20 shadow-lg hidden md:block cursor-pointer pointer-events-auto"
-                                    onClick={(e) => {
-                                        if (link.label === 'Email') {
-                                            handleCopy(e);
-                                        }
-                                    }}
-                                >
+                                <TooltipCard side="top" align="center" width="auto" className="hidden md:block !p-0 !rounded-full pointer-events-auto">
                                     {link.label === 'Email' ? (
-                                        <div className="flex items-center gap-2 group/tooltip">
-                                            <span>syednotion@gmail.com</span>
-                                            <div className="p-1 rounded-md bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20 transition-colors">
-                                                {copied ? (
-                                                    <Check className="w-3 h-3 text-green-400 dark:text-green-600" />
-                                                ) : (
-                                                    <Copy className="w-3 h-3 text-gray-400 group-hover/tooltip:text-white dark:group-hover/tooltip:text-black transition-colors" />
-                                                )}
-                                            </div>
-                                        </div>
+                                        // Email: the address, and a copy button whose icon morphs into a check
+                                        <button
+                                            type="button"
+                                            onClick={handleCopy}
+                                            className="group/copy flex items-center gap-2 h-8 pl-3 pr-1.5 text-[12px] font-medium text-[#a1a1a1]"
+                                        >
+                                            syednotion@gmail.com
+                                            <span className="relative w-6 h-6 rounded-full bg-white/[0.08] group-hover/copy:bg-white/[0.14] transition-colors flex items-center justify-center">
+                                                <AnimatePresence mode="popLayout" initial={false}>
+                                                    <motion.span
+                                                        key={copied ? 'check' : 'copy'}
+                                                        initial={{ scale: 0.4, opacity: 0, filter: 'blur(2px)' }}
+                                                        animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+                                                        exit={{ scale: 0.4, opacity: 0, filter: 'blur(2px)' }}
+                                                        transition={{ type: 'spring', duration: 0.3, bounce: 0.3 }}
+                                                    >
+                                                        {copied ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3 text-[#a1a1a1]" />}
+                                                    </motion.span>
+                                                </AnimatePresence>
+                                            </span>
+                                        </button>
                                     ) : (
-                                        link.label
+                                        <span className="flex items-center h-8 px-3 text-[12px] font-medium text-[#a1a1a1]">{link.label}</span>
                                     )}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-black dark:border-t-white" />
-                                    {/* Invisible bridge to prevent mouseleave when moving to tooltip */}
-                                    <div className="absolute top-full left-0 w-full h-4 bg-transparent" />
-                                </motion.div>
+                                    {/* Invisible bridge so the tooltip stays while the cursor travels up to it */}
+                                    <span aria-hidden className="absolute top-full left-0 w-full h-3" />
+                                </TooltipCard>
                             )}
                         </AnimatePresence>
                         <a
                             href={link.href}
                             target={link.label === 'Email' ? undefined : "_blank"}
                             rel={link.label === 'Email' ? undefined : "noopener noreferrer"}
+                            aria-label={link.label}
                             className="w-full aspect-square p-1 flex items-center justify-center"
                         >
-                            <div className="w-full h-full rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-sm hover:border-gray-300 dark:hover:border-white/20 transition-all active:scale-95">
-                                <link.icon className="w-1/2 h-1/2 text-gray-700 dark:text-gray-200" />
+                            <div className="w-full h-full rounded-full bg-[#171717] flex items-center justify-center hover:bg-[#222] transition-colors">
+                                <link.icon className="w-1/2 h-1/2 text-neutral-50" />
                             </div>
                         </a>
                     </li>
@@ -662,24 +251,332 @@ const SocialDock = () => {
     );
 };
 
+export const PortfolioHome: React.FC<PortfolioHomeProps> = ({ onNavigate, toggleTheme, isDark, introReady = true }) => {
+    const triggerRef = useRef<HTMLHeadingElement>(null);    const [activeSection, setActiveSection] = useState<string | null>('about');
+    const [openRow, setOpenRow] = useState<number | null>(null);
+    // First visit plays the blueprint intro: hero text starts under blocks instead of fading in
+    const [playIntro] = useState(!introReady);
+    // Amicro's star count is live from GitHub (cached an hour; last known figure until then)
+    const stars = useGithubStars(AMICRO_REPO, AMICRO_STARS);
+    const projects = PROJECTS.map((p) => ({ ...p, detail: p.detail.replace('{stars}', stars) }));
+    // Return visits blur the bio in word by word, so the badges wait for the last word;
+    // after the intro they wait for the blocks to finish wiping instead
+    const roomAt = playIntro ? 900 : W[6] * 45 + 450;
 
+    // Photo easter egg: long-press or double-click starts an iOS-style jiggle;
+    // it settles by itself, or on the next tap
+    const [jiggle, setJiggle] = useState(false);
+    const pressTimer = useRef<number | undefined>(undefined);
+    const stopTimer = useRef<number | undefined>(undefined);
+    const startJiggle = () => {
+        triggerHaptic([8, 40, 8]);
+        setJiggle(true);
+        window.clearTimeout(stopTimer.current);
+        stopTimer.current = window.setTimeout(() => setJiggle(false), 2600);
+    };
+    const jiggleHandlers = {
+        onPointerDown: () => {
+            if (jiggle) { setJiggle(false); return; }
+            pressTimer.current = window.setTimeout(startJiggle, 550);
+        },
+        onPointerUp: () => window.clearTimeout(pressTimer.current),
+        onPointerLeave: () => window.clearTimeout(pressTimer.current),
+        onDragStart: () => window.clearTimeout(pressTimer.current),
+        onDoubleClick: startJiggle,
+        onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    };
+    useEffect(() => () => { window.clearTimeout(pressTimer.current); window.clearTimeout(stopTimer.current); }, []);
 
-const ArticleItem = ({ title, date, readTime, onClick }: { title: string, date: string, readTime: string, onClick: (e: React.MouseEvent) => void }) => (
-    <button onClick={onClick} className="w-full text-left group flex items-center justify-between py-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 px-4 rounded-lg transition-colors -mx-4 active:bg-gray-100 dark:active:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-        <div>
-            <h3 className="text-base font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{title}</h3>
-            <span className="text-xs text-gray-500 mt-1 inline-block">{date}</span>
+    // Scroll spy — drives the side timeline and the island's section label
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => entries.forEach((e) => { if (e.isIntersecting) setActiveSection(e.target.id); }),
+            { rootMargin: '-40% 0px -40% 0px' }
+        );
+        SECTIONS.forEach(({ id }) => {
+            const el = document.getElementById(id);
+            if (el) observer.observe(el);
+        });
+        // Contact is short — claim it once the page bottoms out
+        const onScroll = () => {
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) setActiveSection('contact');
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => { observer.disconnect(); window.removeEventListener('scroll', onScroll); };
+    }, []);
+
+    const scrollToSection = (id: string) => {
+        triggerHaptic(5);
+        const el = document.getElementById(id);
+        if (!el) return;
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 120, behavior: 'smooth' });
+        setActiveSection(id);
+    };
+
+    return (
+        <div className="relative min-h-screen bg-black text-neutral-50 font-sans overflow-x-clip">
+            <DynamicNavigation
+                triggerRef={triggerRef}
+                toggleTheme={toggleTheme}
+                isDark={isDark}
+                sections={SECTIONS}
+                activeSectionId={activeSection}
+                onSectionClick={scrollToSection}
+                onNavigate={onNavigate}
+                currentView="home"
+                enableIsland={true}
+                shouldHideDock={activeSection === 'contact'}
+                showBottomDock={false}
+            />
+
+            {/* Bottom room on phones so the back-to-top button never sits on the footer */}
+            <main className="max-w-[680px] mx-auto px-5 sm:px-6 pt-32 md:pt-40 pb-24 sm:pb-10 relative z-10">
+                {/* --- HERO / ABOUT — phones: photo beside the name, like a profile header.
+                    Desktop: the original layout, photo on the right. One grid, two arrangements. --- */}
+                <section id="about" className={SECTION_SPACE}>
+                    <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-x-4 items-center md:grid-cols-[minmax(0,1fr)_132px] md:gap-x-10 md:items-start">
+                        <motion.div
+                            initial={playIntro ? false : { opacity: 0, scale: 0.96, filter: 'blur(8px)' }}
+                            animate={introReady || playIntro ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : undefined}
+                            transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.15 }}
+                            drag
+                            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                            dragElastic={0.2}
+                            whileHover={{ scale: 1.02, cursor: 'grab' }}
+                            whileDrag={{ cursor: 'grabbing', scale: 1.05 }}
+                            {...jiggleHandlers}
+                            className="relative w-16 md:w-[132px] col-start-1 row-start-1 row-span-2 md:col-start-2 md:row-span-4 z-20 touch-none [-webkit-touch-callout:none]"
+                        >
+                            {/* Easter egg: long-press (or double-click) and it jiggles like an
+                                iOS home screen in edit mode, minus badge and all */}
+                            <motion.div
+                                animate={jiggle ? { rotate: [-1.8, 1.8] } : { rotate: 0 }}
+                                transition={jiggle ? { duration: 0.12, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' } : { type: 'spring', duration: 0.3, bounce: 0 }}
+                                className="relative"
+                            >
+                                <BlockReveal active={playIntro} blocked={!introReady} box delay={0.05} className="rounded-[18px] md:rounded-2xl">
+                                    <div className="aspect-square w-full rounded-[18px] md:rounded-2xl overflow-hidden pointer-events-none select-none">
+                                        <img src={profilePic} alt="Syed Subhan" className="w-full h-full object-cover pointer-events-none" />
+                                    </div>
+                                </BlockReveal>
+                                <AnimatePresence>
+                                    {jiggle && (
+                                        <motion.span
+                                            aria-hidden
+                                            initial={{ scale: 0.4, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.4, opacity: 0, transition: { duration: 0.12 } }}
+                                            transition={{ type: 'spring', duration: 0.35, bounce: 0.35 }}
+                                            className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-[#3a3a3c] flex items-center justify-center shadow-md"
+                                        >
+                                            <span className="block w-2 h-[1.5px] rounded-full bg-white" />
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        </motion.div>
+
+                        <motion.div
+                            variants={staggerVariants(0.07)}
+                            // First visit: the text is already in place under blueprint blocks
+                            initial={playIntro ? 'visible' : 'hidden'}
+                            animate={introReady || playIntro ? 'visible' : 'hidden'}
+                            className="contents"
+                        >
+                            <motion.h1 ref={triggerRef} variants={revealVariants} className={cn(T_DISPLAY, "max-md:text-[24px] max-md:leading-[30px] font-bold text-neutral-50 col-start-2 row-start-1 self-end md:col-start-1 md:self-auto")}>
+                                <BlockReveal active={playIntro} blocked={!introReady}>
+                                    <span className="text-[#a1a1a1]">Hi, I'm</span> <NameWave>Syed Subhan</NameWave>
+                                </BlockReveal>
+                            </motion.h1>
+
+                            {/* Role morph — letter by letter */}
+                            <motion.div variants={revealVariants} className="col-start-2 row-start-2 self-start md:col-start-1 mt-0.5 md:mt-1 md:mb-5">
+                                <BlockReveal active={playIntro} blocked={!introReady} delay={0.1}>
+                                    <BlurShimmerText
+                                        texts={["Design Engineer", "Indie Developer", "Open-Source Builder"]}
+                                        interval={2.6}
+                                        blur={6}
+                                        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                                        className={cn(T_TITLE, "font-medium text-[#a1a1a1]")}
+                                    />
+                                </BlockReveal>
+                            </motion.div>
+
+                            {/* Bio: one quiet paragraph. Return visits blur it in word by word; then each
+                                project's icon makes room beside its name and opens a card about it. */}
+                            <motion.div variants={revealVariants} className={cn(T_BODY, "col-span-2 md:col-span-1 md:col-start-1 mt-5 md:mt-0 max-w-[460px] text-[#a1a1a1]")}>
+                                <BlockReveal active={playIntro} blocked={!introReady} delay={0.18}>
+                                    <p className={cn(!playIntro && "cite-play")}>
+                                        <Words text={BIO[0]} from={0} />{' '}
+                                        <span className="wd" style={{ '--i': W[1] } as React.CSSProperties}><LocationIndicator /></span>
+                                        <Words text={BIO[1]} from={W[1] + 1} />{' '}
+                                        <ProjectCite
+                                            name="Amicro"
+                                            href="https://amicro.dev"
+                                            icon="/projects/amicro-icon.png"
+                                            image="/projects/amicro.jpg"
+                                            note={`Open-source micro-interactions for React. ${stars} GitHub stars, 5M+ views, Vercel OSS ’26.`}
+                                            from={W[2]}
+                                            roomAt={roomAt}
+                                            ready={introReady}
+                                            autoOpen
+                                        />
+                                        <Words text="and" from={W[3]} />{' '}
+                                        <ProjectCite
+                                            name="Oxygen UI"
+                                            href="https://oxygenui.xyz"
+                                            icon="/projects/oxygen-icon.png"
+                                            image="/projects/oxygen-ui.jpg"
+                                            note="Solana UI primitives, backed by Solana Foundation India."
+                                            from={W[4]}
+                                            roomAt={roomAt + 120}
+                                            ready={introReady}
+                                        />
+                                        <Words text="." from={W[5]} />
+                                    </p>
+                                </BlockReveal>
+                            </motion.div>
+
+                            <motion.div variants={revealVariants} className="col-span-2 md:col-span-1 md:col-start-1 mt-5">
+                                <HandNote delay={introReady ? 1.1 : 2.5} />
+                            </motion.div>
+                        </motion.div>
+                    </div>
+                </section>
+
+                {/* --- WORK --- */}
+                <section id="work" className={SECTION_SPACE}>
+                    <SectionTitle title="Work" />
+                    {/* Plain rows: space separates them, no rules or frames */}
+                    <ul>
+                        {WORK.map((w, i) => (
+                            <motion.li
+                                key={w.name}
+                                {...FADE_IN}
+                                className="group"
+                            >
+                                {/* Hover opens on desktop; tap toggles on touch */}
+                                <button
+                                    type="button"
+                                    onClick={() => { triggerHaptic(8); setOpenRow(openRow === i ? null : i); }}
+                                    aria-expanded={openRow === i}
+                                    className="w-full flex items-center gap-3 py-3 text-left select-none"
+                                >
+                                    <span className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-x-6 gap-y-0.5">
+                                        <span className={cn(T_BODY, "font-medium text-neutral-50")}>{w.name}</span>
+                                        <span className={cn(T_META, "text-[#a1a1a1] sm:text-right tabular-nums")}>
+                                            {w.role} · {w.dates}
+                                        </span>
+                                    </span>
+                                    {/* Touch only: + turns into × when open */}
+                                    <svg viewBox="0 0 24 24" aria-hidden className={cn("hidden [@media(hover:none)]:block w-4 h-4 shrink-0 text-[#a1a1a1] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]", openRow === i && "rotate-45")} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                                        <path d="M12 5v14M5 12h14" />
+                                    </svg>
+                                </button>
+
+                                <div className={cn(
+                                    "grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                                    openRow === i ? "grid-rows-[1fr]" : "grid-rows-[0fr] [@media(hover:hover)_and_(pointer:fine)]:group-hover:grid-rows-[1fr]"
+                                )}>
+                                    <div className={cn(
+                                        "overflow-hidden transition-opacity duration-300",
+                                        openRow === i ? "opacity-100" : "opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 group-hover:delay-100"
+                                    )}>
+                                        <div className="pb-3 space-y-1.5">
+                                            <p className={cn(T_META, "text-[#a1a1a1]")}>{w.desc}</p>
+                                            {w.details?.map((d) => (
+                                                <p key={d} className={cn(T_META, "text-[#a1a1a1]")}>{d}</p>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.li>
+                        ))}
+                    </ul>
+                </section>
+
+                {/* --- ARTICLES — rounded Apple cards in a snap row, page dots underneath --- */}
+                <section id="articles" className={SECTION_SPACE}>
+                    <SectionTitle title="Articles" onSeeAll={() => onNavigate('blogs')} />
+                    {/* A slide carousel at every size: swipe, drag the trackpad, the arrow keys,
+                        or the round buttons. The next card always peeks in so it reads as more. */}
+                    <SnapRow
+                        controls
+                        label="articles"
+                        className="-mx-5 px-5 scroll-px-5 sm:-mx-6 sm:px-6 sm:scroll-px-6 flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain py-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
+                        {POSTS.map((post, i) => (
+                            <BlogCard
+                                key={post.id}
+                                meta={`${post.date} · ${post.readTime}`}
+                                title={post.title}
+                                excerpt={post.excerpt}
+                                onSelect={() => onNavigate('blogs', post.id)}
+                                className="snap-start shrink-0 w-[82%] sm:w-[45%]"
+                            />
+                        ))}
+                    </SnapRow>
+                </section>
+
+                {/* --- PROJECTS — swipe row on phones, grid on desktop --- */}
+                <section id="projects" className={SECTION_SPACE}>
+                    <SectionTitle title="Projects" />
+                    <ProjectBento projects={projects} mobileRow />
+                </section>
+
+                {/* --- EXPERIMENTS & COMPONENTS --- */}
+                <section id="lab" className={SECTION_SPACE}>
+                    <SectionTitle title="Experiments" onSeeAll={() => onNavigate('experiments')} />
+                    {/* Two compact cards side by side, even on phones */}
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                        <LabCard index={0} title="Kanban Board" preview={<KanbanPreview />} onSelect={() => onNavigate('kanban')} />
+                        <LabCard index={1} title="Components" preview={<ComponentsPreview />} onSelect={() => onNavigate('experiments')} />
+                    </div>
+                </section>
+
+                {/* --- TOOLS — a dock that swells toward the pointer --- */}
+                <section id="tools" className={SECTION_SPACE}>
+                    <SectionTitle title="Tools" aside={<span className={cn(T_META, "text-[#a1a1a1]")}>What I make things in</span>} />
+                    <ToolsDock />
+                </section>
+
+                {/* --- SCROLL-FILL SENTENCE --- */}
+                <div className="pt-4 md:pt-6 pb-12 md:pb-14">
+                    <ScrollFillText />
+                </div>
+
+                {/* --- VISITOR COUNTER (original, above contact) --- */}
+                <div className="mb-8">
+                    <PageVisitsFooter />
+                </div>
+
+                {/* --- CONTACT + ORIGINAL FOOTER --- */}
+                <section id="contact" className="scroll-mt-32">
+                    <div className="flex flex-col items-center text-center">
+                        <h2 className={cn(T_DISPLAY, "font-semibold text-neutral-50 mb-6 md:mb-8 max-w-[420px] text-balance")}>
+                            Let's build something extraordinary
+                        </h2>
+
+                        <div className="relative z-10 mb-8">
+                            <SocialDock />
+                        </div>
+
+                        {/* Footer: credit on the left, a direct line on the right. Stacks on phones. */}
+                        <div className={cn(T_META, "w-full pt-5 pb-2 flex flex-col-reverse items-center gap-3 sm:flex-row sm:justify-between text-[#a1a1a1]")}>
+                            <p className="inline-flex items-center gap-1.5 tabular-nums">
+                                © {new Date().getFullYear()} Syed Subhan
+                                <span aria-hidden className="text-[#a1a1a1]">·</span>
+                                Built with love <LoveHeart />
+                            </p>
+                            <nav aria-label="Get in touch" className="flex items-center gap-4">
+                                <a href="https://x.com/SubhanHQ" target="_blank" rel="noopener noreferrer" className={cn(LINK_UNDERLINE, "text-[#a1a1a1] hover:text-white")}>DM me</a>
+                                <span aria-hidden className="text-[#a1a1a1]">or</span>
+                                <a href="mailto:syednotion@gmail.com" className={cn(LINK_UNDERLINE, "text-[#a1a1a1] hover:text-white")}>Mail me</a>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+            </main>
         </div>
-
-        {/* Animated Arrow + Read Time */}
-        <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-gray-400">{readTime}</span>
-            <div className="w-4 h-4 overflow-hidden relative flex items-center justify-center">
-                <ArrowRight
-                    size={16}
-                    className="absolute text-blue-500 transform transition-all duration-300 opacity-0 -translate-x-full group-hover:translate-x-0 group-hover:opacity-100"
-                />
-            </div>
-        </div>
-    </button>
-);
+    );
+};

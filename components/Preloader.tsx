@@ -36,18 +36,12 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
   }, []);
 
   useEffect(() => {
-    console.log("Preloader index:", index);
-    // Auto-complete after 3 seconds regardless of word cycle
-    const autoCompleteTimer = setTimeout(() => {
-      console.log("Preloader auto-complete triggered");
-      onComplete();
-    }, 3000);
+    // Hard cap so the intro never holds the page hostage
+    const autoCompleteTimer = setTimeout(onComplete, 2400);
 
     if (index === words.length - 1) {
-      // End of words, trigger completion after a short delay
-      const timeout = setTimeout(() => {
-        onComplete();
-      }, 1000);
+      // Hold the last word just long enough to read it
+      const timeout = setTimeout(onComplete, 350);
       return () => {
         clearTimeout(timeout);
         clearTimeout(autoCompleteTimer);
@@ -56,7 +50,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
 
     const timeout = setTimeout(() => {
       setIndex(index + 1);
-    }, index === 0 ? 1000 : 150);
+    }, index === 0 ? 700 : 120);
     return () => {
       clearTimeout(timeout);
       clearTimeout(autoCompleteTimer);
@@ -68,20 +62,24 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       initial={{ y: 0 }}
       exit={{
         y: "-100vh",
-        transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1], delay: 0.2 }
+        transition: { duration: 0.75, ease: [0.76, 0, 0.24, 1] }
       }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-black text-black dark:text-white overflow-visible cursor-wait"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-black text-black dark:text-white overflow-visible"
     >
-      <div className="flex items-center gap-3 z-10">
+      <motion.div
+        className="flex items-center gap-3 z-10"
+        initial={{ opacity: 0, filter: 'blur(6px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }}
+        exit={{ opacity: 0, transition: { duration: 0.2 } }}
+      >
         <span
           className={cn(
-            "text-4xl md:text-6xl font-serif italic tracking-tight text-black dark:text-white",
-            words[index] === "こんにちは" && "font-bold not-italic"
+            "text-4xl md:text-6xl font-sans font-semibold text-black dark:text-white"
           )}
         >
           {words[index]}
         </span>
-      </div>
+      </motion.div>
 
       {/* Curve Tail */}
       <svg className="absolute top-full w-full h-[calc(100vh*0.2)] fill-white dark:fill-black pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">

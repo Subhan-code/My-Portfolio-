@@ -2,7 +2,8 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { cn, triggerHaptic } from '../../lib/utils';
-import { Calendar, Briefcase } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
+import { EASE_OUT } from '../../lib/motion';
 
 export interface ExperienceItemProps {
     role: string;
@@ -11,17 +12,19 @@ export interface ExperienceItemProps {
     desc: string;
     details?: string[];
     logo?: string;
+    /** Typographic mark used when there is no image logo */
+    logoGlyph?: 'code';
     index?: number;
 }
 
-const TimelineItem = ({ role, company, date, desc, details, logo, index }: ExperienceItemProps) => {
+const TimelineItem = ({ role, company, date, desc, details, logo, logoGlyph, index }: ExperienceItemProps) => {
     return (
         <motion.div
             className="group relative flex gap-4 md:gap-6 pb-8 last:pb-0"
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.5, delay: index ? index * 0.1 : 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.7, ease: EASE_OUT, delay: index ? index * 0.06 : 0 }}
         >
             {/* 1. Timeline Track Marker (Dot) */}
             <div className="shrink-0 w-12 flex justify-center pt-3 relative z-10">
@@ -37,9 +40,16 @@ const TimelineItem = ({ role, company, date, desc, details, logo, index }: Exper
                     <div className="shrink-0">
                         <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 flex items-center justify-center shadow-sm overflow-hidden group-hover:scale-105 transition-transform duration-300">
                             {logo ? (
-                                <img src={logo} alt={company} className="w-full h-full object-contain p-1.5 opacity-90 group-hover:opacity-100 transition-opacity" />
+                                <img src={logo} alt={company} className="w-full h-full object-contain p-2 opacity-90 group-hover:opacity-100 transition-opacity" />
+                            ) : logoGlyph === 'code' ? (
+                                // Brackets drift apart on hover — a small breath, not a bounce
+                                <span aria-hidden className="flex items-center font-mono font-bold text-footnote md:text-callout leading-none text-gray-900 dark:text-white select-none">
+                                    <span className="inline-block transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-[2px]">&lt;</span>
+                                    <span className="inline-block transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 group-hover:-rotate-6">/</span>
+                                    <span className="inline-block transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-[2px]">&gt;</span>
+                                </span>
                             ) : (
-                                <span className="text-base font-bold text-gray-400 dark:text-gray-500">{company.charAt(0)}</span>
+                                <Briefcase size={18} strokeWidth={1.75} className="text-gray-400 dark:text-gray-500" aria-hidden />
                             )}
                         </div>
                     </div>
@@ -47,16 +57,15 @@ const TimelineItem = ({ role, company, date, desc, details, logo, index }: Exper
                     {/* Text Header */}
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
-                            <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                            <h3 className="text-headline text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
                                 {company}
                             </h3>
-                            <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-white/5 px-2 py-0.5 rounded-full w-fit transition-colors duration-300">
-                                <Calendar size={10} />
+                            <span className="text-footnote font-medium text-gray-400 dark:text-gray-500 tabular-nums">
                                 {date}
-                            </div>
+                            </span>
                         </div>
 
-                        <div className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2 transition-colors duration-300 mt-0.5">
+                        <div className="text-subhead font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2 transition-colors duration-300 mt-0.5">
                             <Briefcase size={12} />
                             {role}
                         </div>
@@ -64,27 +73,29 @@ const TimelineItem = ({ role, company, date, desc, details, logo, index }: Exper
                 </div>
 
                 {/* Expandable Content: Description + Details */}
-                <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1.0)]">
-                    <div className="overflow-hidden">
+                <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] [@media(hover:none)]:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                    <div className="overflow-hidden opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-300 group-hover:delay-100">
                         <div className="pt-3 pl-2">
                             {/* Description moved here */}
-                            <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed mb-3 text-pretty transition-colors duration-300 max-w-2xl">
+                            <p className="text-gray-600 dark:text-gray-300 text-callout mb-3 text-pretty transition-colors duration-300 max-w-2xl">
                                 {desc}
                             </p>
 
+                            {details && details.length > 0 && (
                             <div className="pl-3 border-l-[1.5px] border-blue-500/20 ml-1">
                                 <ul className="space-y-2 pb-2">
                                     {details?.map((item, i) => (
                                         <li
                                             key={i}
-                                            className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pl-2 relative flex items-start gap-2 transition-colors duration-300"
+                                            className="text-subhead text-gray-600 dark:text-gray-400 pl-2 relative flex items-start gap-2 transition-colors duration-300"
                                         >
-                                            <span className="shrink-0 mt-1.5 w-1 h-1 rounded-full bg-blue-500" />
+                                            <span className="shrink-0 mt-2 w-1 h-1 rounded-full bg-blue-500" />
                                             <span>{item}</span>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
+                            )}
                         </div>
                     </div>
                 </div>

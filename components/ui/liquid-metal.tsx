@@ -107,7 +107,7 @@ export const LiquidMetalButton = forwardRef<HTMLButtonElement, LiquidMetalButton
                                 <span className="text-neutral-700 dark:text-neutral-300">{icon}</span>
                             </div>
                         )}
-                        <span className="relative font-bold tracking-tight text-neutral-900 dark:text-white">{children}</span>
+                        <span className="relative font-bold text-neutral-900 dark:text-white">{children}</span>
                     </div>
                 </div>
             </button>

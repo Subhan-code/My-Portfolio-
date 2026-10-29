@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring, useMotionValueEvent } from 'framer-motion';
-import { NativeMagnetic } from './ui/NativeMagnetic';
 import { cn, triggerHaptic } from '../lib/utils';
-import { GSAPMenuLink } from './GSAPMenuLink';
-import { ChevronDown, Check, Sun, Moon } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { NumberTicker } from './NumberTicker';
 import { AppleDock } from './AppleDock';
+import { EASE_OUT, EASE_EXIT } from '../lib/motion';
 
 interface DynamicNavigationProps {
     triggerRef: React.RefObject<HTMLElement>;
@@ -18,17 +17,39 @@ interface DynamicNavigationProps {
     currentView: string;
     enableIsland?: boolean;
     shouldHideDock?: boolean;
+    /** Show the floating icon dock at the bottom while in island mode */
+    showBottomDock?: boolean;
 }
 
 const NAV_ITEMS = [
-    { name: 'HOME', view: 'home' },
-    { name: 'PROJECTS', view: 'projects' },
-    { name: 'BLOGS', view: 'blogs' },
-    { name: 'CONTACT', view: 'contact' },
+    { name: 'Home', view: 'home' },
+    { name: 'Projects', view: 'projects' },
+    { name: 'Articles', view: 'blogs' },
+    { name: 'Contact', view: 'contact' },
 ];
+
+const TOC_PANEL = {
+    hidden: { opacity: 0, scale: 0.95, y: -8, filter: 'blur(8px)' },
+    visible: {
+        opacity: 1, scale: 1, y: 0, filter: 'blur(0px)',
+        transition: { duration: 0.38, ease: EASE_OUT, staggerChildren: 0.03, delayChildren: 0.04 },
+    },
+    exit: {
+        opacity: 0, scale: 0.97, y: -4, filter: 'blur(6px)',
+        transition: { duration: 0.18, ease: EASE_EXIT },
+    },
+};
+
+const TOC_ITEM = {
+    hidden: { opacity: 0, y: 6, filter: 'blur(3px)' },
+    visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.32, ease: EASE_OUT } },
+    exit: { opacity: 0, transition: { duration: 0.1 } },
+};
 
 // High stiffness = fast. Low damping = bouncy. Low mass = lightweight/snappy.
 const SPRING_TRANSITION = { type: "spring" as const, stiffness: 500, damping: 22, mass: 0.6 };
+// Island is an 'alive' element: a touch of bounce, but damped enough to never wobble
+const ISLAND_SPRING = { type: "spring" as const, stiffness: 500, damping: 32, mass: 0.6 };
 
 export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
     triggerRef,
@@ -40,7 +61,8 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
     onNavigate,
     currentView,
     enableIsland = false,
-    shouldHideDock = false
+    shouldHideDock = false,
+    showBottomDock = true
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -92,6 +114,23 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
         return () => window.removeEventListener('scroll', handleScroll);
     }, [triggerRef, isScrolled, enableIsland]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = previous; };
+    }, [isOpen]);
+
+    const navRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!isIslandExpanded) return;
+        const onPointerDown = (e: PointerEvent) => {
+            if (navRef.current && !navRef.current.contains(e.target as Node)) setIsIslandExpanded(false);
+        };
+        document.addEventListener('pointerdown', onPointerDown);
+        return () => document.removeEventListener('pointerdown', onPointerDown);
+    }, [isIslandExpanded]);
+
     // Close on escape
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -129,99 +168,48 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
     const isIslandMode = isScrolled && enableIsland && !isOpen && !shouldHideDock;
 
     // Responsive Widths
-    const getOpenWidth = () => isMobile ? "90vw" : 540;
-    const getClosedWidth = () => isMobile ? 200 : 290;
-    const getIslandWidth = () => {
-        if (isMobile) return isIslandExpanded ? 300 : 220;
-        return isIslandExpanded ? 305 : 235;
-    };
-    const getTriggerHeight = () => {
-        if (isIslandMode) return isIslandExpanded ? "auto" : 43;
-        return isMobile ? 48 : 58;
-    };
+    // Compact: a small pill that grows into a small menu
+    const getOpenWidth = () => isMobile ? "min(88vw, 320px)" : 320;
+    const getClosedWidth = () => isMobile ? 136 : 148;
+    const getIslandWidth = () => isMobile ? 196 : 208;
+    const getTriggerHeight = () => (isIslandMode ? 36 : 40);
 
     return (
         <>
             {/* BACKGROUND BACKDROP */}
             <div
                 className={cn(
-                    "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-                    isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                    "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity",
+                    isOpen ? "opacity-100 pointer-events-auto duration-300 ease-out" : "opacity-0 pointer-events-none duration-200 ease-in"
                 )}
                 onClick={() => setIsOpen(false)}
             />
 
-            {/* TOP RIGHT THEME TOGGLE BUTTON - Desktop Only */}
-            {/* Hidden when Dock is visible (isIslandMode) or Menu is open or on Mobile */}
-            <NativeMagnetic strength={0.2}>
-                <motion.button
-                    onClick={handleThemeToggle}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{
-                        opacity: (isOpen || isIslandMode) ? 0 : 1,
-                        scale: (isOpen || isIslandMode) ? 0.9 : 1,
-                        pointerEvents: (isOpen || isIslandMode) ? 'none' : 'auto'
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className={cn(
-                        "fixed top-7 right-6 z-40 w-[44px] h-[44px] hidden md:flex items-center justify-center",
-                        "bg-white/80 dark:bg-[#111]/80 backdrop-blur-md border border-gray-200 dark:border-white/10 shadow-sm",
-                        "rounded-full text-gray-800 dark:text-white"
-                    )}
-                >
-                    <AnimatePresence mode="wait" initial={false}>
-                        {isDark ? (
-                            <motion.div
-                                key="moon"
-                                initial={{ rotate: -90, scale: 0 }}
-                                animate={{ rotate: 0, scale: 1 }}
-                                exit={{ rotate: 90, scale: 0 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                            >
-                                <Moon size={20} className="fill-current" />
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="sun"
-                                initial={{ rotate: -90, scale: 0 }}
-                                animate={{ rotate: 0, scale: 1 }}
-                                exit={{ rotate: 90, scale: 0 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                            >
-                                <Sun size={20} className="fill-current" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </motion.button>
-            </NativeMagnetic>
-
-            {/* FIXED CONTAINER - Top reduced from 8 to 7 */}
-            <div className="fixed top-7 left-0 w-full z-50 flex flex-col items-center pointer-events-none">
+            {/* FIXED CONTAINER */}
+            <div ref={navRef} className="fixed top-5 left-0 w-full z-50 flex flex-col items-center pointer-events-none">
 
                 {/* 
             UNIFIED TRIGGER BUTTON 
         */}
                 <div className="pointer-events-auto z-50">
                     <motion.button
-                        layout
                         onClick={handleToggle}
-                        transition={SPRING_TRANSITION}
+                        aria-expanded={isIslandMode ? isIslandExpanded : isOpen}
+                        aria-label={isIslandMode ? 'Jump to section' : (isOpen ? 'Close menu' : 'Open menu')}
+                        transition={isIslandMode ? ISLAND_SPRING : SPRING_TRANSITION}
                         className={cn(
                             "relative flex items-center overflow-hidden shadow-2xl border transition-colors duration-300",
                             // Invert Colors based on theme
                             "bg-[#111] dark:bg-white border-white/10 dark:border-black/5",
-                            "hover:bg-[#1a1a1a] dark:hover:bg-[#f2f2f2]",
-                            isIslandMode ? "rounded-[29px]" : "rounded-[14px]" // Reduced radii
+                            "hover:bg-[#1a1a1a] dark:hover:bg-[#f2f2f2]"
                         )}
-                        style={{
-                            height: getTriggerHeight(),
-                        }}
+                        initial={false}
                         animate={{
                             width: isOpen
                                 ? getOpenWidth()
-                                : (isIslandMode ? getIslandWidth() : getClosedWidth())
+                                : (isIslandMode ? getIslandWidth() : getClosedWidth()),
+                            height: getTriggerHeight(),
+                            borderRadius: isIslandMode ? 18 : 20,
                         }}
                     >
                         <AnimatePresence mode="popLayout">
@@ -229,14 +217,13 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
                                 /* --- ISLAND CONTENT --- */
                                 <motion.div
                                     key="island-content"
-                                    initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
+                                    initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
                                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                    exit={{ opacity: 0, y: -20, filter: 'blur(5px)' }}
-                                    transition={{ duration: 0.2 }}
+                                    exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
+                                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                                     className="flex flex-col w-full px-1"
                                 >
-                                    {/* h-12 -> h-[43px] to match container */}
-                                    <div className="flex items-center justify-between w-full pl-2 pr-2 h-[43px]">
+                                    <div className="flex items-center justify-between w-full pl-2 pr-2 h-[36px]">
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <span className={cn(
                                                 "text-[12px] font-medium truncate max-w-[100px] md:max-w-[130px]", // Reduced font size and max-width for mobile
@@ -244,7 +231,7 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
                                             )}>
                                                 {sections.find(s => s.id === activeSectionId)?.title || "Contents"}
                                             </span>
-                                            <ChevronDown size={13} className={cn("text-white/50 dark:text-black/50 transition-transform", isIslandExpanded && "rotate-180")} />
+                                            <ChevronDown size={13} className={cn("text-[#a1a1a1] dark:text-black/50 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]", isIslandExpanded && "rotate-180")} />
                                         </div>
 
                                         <div className="flex items-center gap-3 pl-2">
@@ -253,85 +240,35 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
                                             </div>
                                             <div className="relative w-3.5 h-3.5 flex items-center justify-center"> {/* w-4 h-4 -> w-3.5 h-3.5 */}
                                                 <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="5" className="text-white/20 dark:text-black/10" />
+                                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="5" className="text-[#a1a1a1] dark:text-black/10" />
                                                     <motion.path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="5" className="text-white dark:text-black" style={{ pathLength: smoothProgress }} />
                                                 </svg>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Island Dropdown (TOC) */}
-                                    {isIslandExpanded && sections.length > 0 && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="overflow-hidden w-full pb-2 px-1"
-                                        >
-                                            <div className="h-[1px] w-full bg-white/10 dark:bg-black/5 mb-2" />
-                                            <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto custom-scrollbar"> {/* max-h-200 -> 180 */}
-                                                {sections.map((section) => (
-                                                    <button
-                                                        key={section.id}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            triggerHaptic(10);
-                                                            if (onSectionClick) onSectionClick(section.id);
-                                                            setIsIslandExpanded(false);
-                                                        }}
-                                                        className={cn(
-                                                            "flex items-center justify-between px-3 py-1.5 rounded-lg text-[12px] transition-colors text-left", // py-2 -> py-1.5, text-13 -> 12
-                                                            activeSectionId === section.id
-                                                                ? "bg-white/15 dark:bg-black/5 text-white dark:text-black font-medium"
-                                                                : "text-white/60 dark:text-black/60 hover:bg-white/10 dark:hover:bg-black/5"
-                                                        )}
-                                                    >
-                                                        <span className="truncate">{section.title}</span>
-                                                        {activeSectionId === section.id && <Check size={11} className="opacity-60 shrink-0 ml-2" />}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
                                 </motion.div>
                             ) : (
                                 /* --- MENU TRIGGER CONTENT --- */
                                 <motion.div
                                     key="menu-trigger"
-                                    initial={{ opacity: 0, y: -20, filter: 'blur(5px)' }}
+                                    initial={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
                                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                    exit={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
-                                    transition={{ duration: 0.2 }}
-                                    className={cn(
-                                        "flex items-center justify-between w-full h-full",
-                                        isMobile ? "px-4" : "px-6"
-                                    )}
+                                    exit={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
+                                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                                    className="flex items-center justify-between w-full h-full pl-1.5 pr-4"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <StellarBuddy className={isMobile ? "scale-75 origin-left" : "scale-100 md:scale-100"} />
-                                    </div>
+                                    {/* The little face stays: it's the brand */}
+                                    <StellarBuddy className="scale-[0.75] origin-left" />
 
-                                    <div className="flex items-center gap-3">
-                                        {/* Mobile Theme Toggle - Inline */}
-                                        {isMobile && (
-                                            <div
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleThemeToggle();
-                                                }}
-                                                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/5 text-white/90 dark:text-black/80 hover:bg-white/20 dark:hover:bg-black/10 transition-colors cursor-pointer active:scale-95"
-                                            >
-                                                {isDark ? <Moon size={14} className="fill-current" /> : <Sun size={14} className="fill-current" />}
-                                            </div>
-                                        )}
-
+                                    <div className="flex items-center">
                                         <div className="relative h-3.5 w-11 overflow-hidden flex flex-col items-end"> {/* h-4 -> 3.5, w-12 -> 11 */}
                                             <div className={cn(
                                                 "flex flex-col items-end gap-1 transition-transform duration-500 ease-[cubic-bezier(0.32,0.725,0,1)]",
                                                 isOpen ? "-translate-y-[18px]" : "translate-y-0" // 20px -> 18px
                                             )}>
-                                                <span className="text-[10px] font-bold tracking-widest text-white/90 dark:text-black h-[14px] flex items-center">MENU</span> {/* text-11 -> 10, h-16 -> 14 */}
-                                                <span className="text-[10px] font-bold tracking-widest text-white/90 dark:text-black h-[14px] flex items-center">CLOSE</span>
+                                                <span className="text-[10px] font-bold tracking-widest text-[#a1a1a1] dark:text-black h-[14px] flex items-center">MENU</span> {/* text-11 -> 10, h-16 -> 14 */}
+                                                <span className="text-[10px] font-bold tracking-widest text-[#a1a1a1] dark:text-black h-[14px] flex items-center">CLOSE</span>
                                             </div>
                                         </div>
                                     </div>
@@ -341,6 +278,49 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
                     </motion.button>
                 </div>
 
+                {/* Section list — its own surface, so the pill never has to morph its height */}
+                <AnimatePresence>
+                    {isIslandMode && isIslandExpanded && sections.length > 0 && (
+                        <motion.div
+                            key="island-toc"
+                            variants={TOC_PANEL}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            style={{ transformOrigin: 'top center' }}
+                            className="pointer-events-auto mt-2 w-[260px] p-1.5 rounded-[20px] bg-[#111] dark:bg-white border border-white/10 dark:border-black/5 shadow-2xl"
+                        >
+                            <ul className="flex flex-col gap-0.5 max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain">
+                                {sections.map((section) => {
+                                    const isActive = activeSectionId === section.id;
+                                    return (
+                                        <motion.li key={section.id} variants={TOC_ITEM}>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    triggerHaptic(10);
+                                                    if (onSectionClick) onSectionClick(section.id);
+                                                    setIsIslandExpanded(false);
+                                                }}
+                                                aria-current={isActive ? 'location' : undefined}
+                                                className={cn(
+                                                    "flex w-full items-center justify-between px-3 py-2 rounded-[14px] text-[13px] text-left transition-colors duration-150 active:scale-[0.98]",
+                                                    isActive
+                                                        ? "bg-white/10 dark:bg-black/5 text-white dark:text-black font-medium"
+                                                        : "text-[#a1a1a1] dark:text-black/60 hover:bg-white/5 dark:hover:bg-black/[0.03] hover:text-white dark:hover:text-black"
+                                                )}
+                                            >
+                                                <span className="truncate">{section.title}</span>
+                                                {isActive && <Check size={12} strokeWidth={2} className="opacity-60 shrink-0 ml-2" />}
+                                            </button>
+                                        </motion.li>
+                                    );
+                                })}
+                            </ul>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* 
             EXPANDED MENU CONTENT 
             (Only visible when Open)
@@ -348,13 +328,15 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
                 <div className="flex flex-col items-center gap-2 mt-2 w-full perspective-1000">
 
                     {/* MAIN CARD (NAVIGATION) */}
-                    <motion.div
+                    <motion.nav
+                        aria-label="Main"
+                        aria-hidden={!isOpen}
                         initial={false}
                         animate={isOpen ? {
                             opacity: 1,
                             y: 0,
                             scale: 1,
-                            height: 360, // 400 -> 360
+                            height: 216,
                             width: getOpenWidth(),
                             pointerEvents: "auto"
                         } : {
@@ -362,38 +344,48 @@ export const DynamicNavigation: React.FC<DynamicNavigationProps> = ({
                             y: -20,
                             scale: 0.95,
                             height: 0,
-                            width: isMobile ? 200 : 250, // 280 -> 250
+                            width: isMobile ? 136 : 148,
                             pointerEvents: "none"
                         }}
                         transition={SPRING_TRANSITION}
-                        className="relative bg-[#0a0a0a] dark:bg-white border border-white/10 dark:border-black/5 rounded-[18px] shadow-2xl overflow-hidden flex flex-col items-center origin-top" // rounded-20 -> 18
+                        className="relative bg-[#111] dark:bg-white border border-white/10 dark:border-black/5 rounded-[20px] shadow-2xl overflow-hidden flex flex-col items-center origin-top"
                     >
-                        <div className="w-full h-full py-6 px-5 flex flex-col items-center justify-center"> {/* py-8->6, px-6->5 */}
-                            {NAV_ITEMS.map((item, idx) => (
-                                <div
-                                    key={item.name}
-                                    className="group relative flex items-center justify-center w-full py-1"
-                                >
-                                    <GSAPMenuLink
-                                        text={item.name}
+                        <div className="w-full h-full p-2 flex flex-col justify-center">
+                            {NAV_ITEMS.map((item, i) => {
+                                const isCurrent = item.view === currentView;
+                                return (
+                                    <motion.button
+                                        key={item.name}
+                                        type="button"
                                         onClick={() => handleNavClick(item.view)}
+                                        aria-current={isCurrent ? 'page' : undefined}
+                                        tabIndex={isOpen ? 0 : -1}
+                                        // Items cascade in after the card opens, and leave together
+                                        initial={false}
+                                        animate={isOpen
+                                            ? { opacity: 1, y: 0, filter: 'blur(0px)', transition: { delay: 0.08 + i * 0.04, duration: 0.35, ease: EASE_OUT } }
+                                            : { opacity: 0, y: -6, filter: 'blur(3px)', transition: { duration: 0.12 } }}
+                                        whileTap={{ scale: 0.97 }}
                                         className={cn(
-                                            // Reduced font sizes for mobile
-                                            "font-serif font-bold text-[2.2rem] md:text-[4rem] text-white dark:text-black tracking-tighter transition-colors duration-300",
-                                            "hover:text-white/50 dark:hover:text-black/50"
+                                            "flex items-center justify-center w-full h-11 px-4 rounded-[14px] font-sans text-[15px] font-medium text-center transition-colors duration-150",
+                                            isCurrent
+                                                ? "bg-white/[0.08] dark:bg-black/[0.05] text-white dark:text-black"
+                                                : "text-[#a1a1a1] dark:text-black/60 hover:bg-white/[0.05] dark:hover:bg-black/[0.03] hover:text-white dark:hover:text-black"
                                         )}
-                                    />
-                                </div>
-                            ))}
+                                    >
+                                        {item.name}
+                                    </motion.button>
+                                );
+                            })}
                         </div>
-                    </motion.div>
+                    </motion.nav>
 
                 </div>
             </div>
 
             {/* APPLE STYLE DOCK - Appears only when scrolled (Island Mode) */}
             <AppleDock
-                visible={Boolean(isIslandMode)}
+                visible={Boolean(isIslandMode) && showBottomDock}
                 onNavigate={onNavigate}
                 toggleTheme={handleThemeToggle}
                 isDark={isDark}

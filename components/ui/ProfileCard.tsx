@@ -11,13 +11,13 @@ interface ProfileCardProps {
     portfolioLink?: string;
     imageUrl?: string;
     statusText?: string;
-    Icon1?: React.ElementType;
-    Icon2?: React.ElementType;
+    Icon1?: React.ComponentType<{ size?: number }>;
+    Icon2?: React.ComponentType<{ size?: number }>;
     PrimaryBtnText?: string;
     SecondaryBtnText?: string;
     subText?: string;
     onClick?: () => void;
-    Icon3?: React.ElementType;
+    Icon3?: React.ComponentType<{ size?: number }>;
     index?: number;
 }
 

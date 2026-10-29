@@ -59,13 +59,30 @@ body {
 
 body {
     font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    /* Inter's optical sizes: display cut for big type, text cut for small.
+       cv11 = single-storey a, ss03 = rounder quotes and commas */
+    font-optical-sizing: auto;
+    font-feature-settings: 'cv11', 'ss03';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
+/* One family everywhere; headings get weight, not a second face or tighter tracking */
 h1,
 h2,
 h3,
 h4 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    text-wrap: balance;
+}
+
+/* Figures that update or align read as tabular */
+.tabular-nums,
+time {
+    font-variant-numeric: tabular-nums;
 }
 
 /* Hide scrollbar for cleaner look */
@@ -104,6 +121,20 @@ h4 {
     animation: shimmer 8s linear infinite;
 }
 
+@keyframes shimmer-slide {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-shimmer-slide {
+    animation: shimmer-slide 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 /* Shine Animation */
 @keyframes shine-move {
     0% {
@@ -139,4 +170,201 @@ h4 {
     background-image: linear-gradient(135deg, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground)) 60%);
     background-size: 0% 200%;
     background-repeat: no-repeat;
+}
+
+/* --- Apple-style refinements --- */
+html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Controls respond on tap without the double-tap wait, and long-press doesn't select their labels */
+button,
+a,
+[role="button"] {
+    touch-action: manipulation;
+}
+
+button,
+[role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* iOS zooms into inputs under 16px */
+@media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+        font-size: 16px;
+    }
+}
+
+
+/* --- Article body ---
+   Articles keep their own markup; this normalises it onto the site's two colours
+   (#fafafa for headings and emphasis, #a1a1a1 for everything else), one surface
+   (#171717), no edges, no rules, no negative tracking. */
+.article-prose {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 28px;
+    color: #a1a1a1;
+}
+.article-prose > * + * { margin-top: 1.25em; }
+.article-prose p,
+.article-prose li {
+    font-size: 16px !important;
+    line-height: 28px !important;
+    color: #a1a1a1 !important;
+}
+.article-prose .lead,
+.article-prose p.lead {
+    font-size: 18px !important;
+    line-height: 30px !important;
+    color: #fafafa !important;
+    margin-bottom: 2rem !important;
+}
+.article-prose h2,
+.article-prose h3,
+.article-prose h4 {
+    font-family: 'Inter', sans-serif !important;
+    color: #fafafa !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-wrap: balance;
+    scroll-margin-top: 6rem;
+}
+.article-prose h2 {
+    font-size: 20px !important;
+    line-height: 28px !important;
+    margin-top: 3rem !important;
+    margin-bottom: 0.75rem !important;
+}
+.article-prose h3,
+.article-prose h4 {
+    font-size: 16px !important;
+    line-height: 24px !important;
+    margin-top: 2rem !important;
+    margin-bottom: 0.5rem !important;
+}
+.article-prose strong { color: #fafafa; font-weight: 600; }
+.article-prose em, .article-prose i { font-style: normal; }
+.article-prose a {
+    color: #fafafa;
+    text-decoration: underline;
+    text-decoration-color: #a1a1a1;
+    text-underline-offset: 4px;
+}
+.article-prose ul,
+.article-prose ol { padding-left: 1.25rem; }
+.article-prose ul { list-style: disc; }
+.article-prose ol { list-style: decimal; }
+.article-prose li::marker { color: #a1a1a1; }
+.article-prose li + li { margin-top: 0.4em; }
+.article-prose hr { display: none; }
+/* Callouts: the site's one surface, flat */
+.article-prose div[class*="rounded"] {
+    background: #171717 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 18px !important;
+    padding: 1.25rem 1.5rem !important;
+    margin: 2rem 0 !important;
+}
+.article-prose div[class*="rounded"] p {
+    font-size: 14px !important;
+    line-height: 22px !important;
+}
+.article-prose blockquote {
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 2.5rem 0 !important;
+    font-style: normal !important;
+    font-size: 18px !important;
+    line-height: 30px !important;
+    color: #fafafa !important;
+}
+.article-prose pre {
+    background: #171717 !important;
+    border: 0 !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    padding: 1.25rem !important;
+    font-size: 13px !important;
+    line-height: 22px !important;
+    color: #fafafa !important;
+    overflow-x: auto;
+}
+.article-prose code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; }
+.article-prose :not(pre) > code {
+    padding: 0.15em 0.4em;
+    border-radius: 6px;
+    background: #171717;
+    color: #fafafa;
+}
+.article-prose img { border-radius: 16px; }
+
+/* --- Project mentions (ProjectCite) ---
+   A real spring (stiffness 260, damping 22) sampled into linear(), so CSS motion
+   settles the way the framer springs do */
+:root {
+    --spring: linear(0, 0.0262, 0.0932, 0.1864, 0.2938, 0.406, 0.5161, 0.6192, 0.7123, 0.7934, 0.862, 0.9182, 0.9626, 0.9964, 1.0209, 1.0374, 1.0475, 1.0523, 1.0533, 1.0513, 1.0473, 1.0421, 1.0363, 1.0303, 1.0245, 1.0191, 1.0143, 1.0101, 1.0066, 1.0038, 1.0015, 0.9998, 0.9986, 0.9978, 0.9974, 0.9972, 0.9972, 0.9973, 0.9975, 0.9978, 1);
+}
+.wd { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+    /* The sentence blurs in word by word */
+    .cite-play .wd { animation: cite-word 0.5s ease-out calc(var(--i) * 45ms) both; }
+    /* Then each badge makes room for itself, pushing the words apart */
+    .cite-room { animation: cite-room 0.8s var(--spring) var(--bd, 0.4s) both; }
+}
+@keyframes cite-word {
+    0% { opacity: 0; translate: 0 10px; filter: blur(10px); }
+}
+@keyframes cite-room {
+    0% { width: 0; margin: 0 -0.13em; opacity: 0; scale: 0.6; filter: blur(8px); }
+    45% { opacity: 0; filter: blur(8px); }
+}
+/* Selection matches the monochrome system */
+::selection {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
+:focus-visible {
+    outline: 2px solid rgb(59 130 246 / 0.7);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html:focus-within {
+        scroll-behavior: auto;
+    }
+
+    .animate-shimmer,
+    .animate-shine-gold,
+    .animate-ping,
+    .animate-pulse {
+        animation: none !important;
+    }
+
+    ::view-transition-group(root),
+    ::view-transition-new(root),
+    ::view-transition-old(root) {
+        animation: none !important;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .backdrop-blur-sm,
+    .backdrop-blur,
+    .backdrop-blur-md,
+    .backdrop-blur-lg,
+    .backdrop-blur-xl {
+        backdrop-filter: none !important;
+    }
 }

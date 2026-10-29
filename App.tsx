@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { PortfolioHome } from './components/PortfolioHome';
-import { BlogPage } from './components/BlogPage';
-import { BlogListPage } from './components/BlogListPage';
-import { ProjectsPage } from './components/ProjectsPage';
-import { ContactPage } from './components/ContactPage';
 import { Footer } from './components/Footer';
-import { AnimatePresence } from 'framer-motion';
-import { Preloader } from './components/Preloader';
-import { KanbanBoard } from './components/KanbanBoard';
-import { CommandPalette } from './components/CommandPalette';
-import { ExperimentsPage } from './components/ExperimentsPage';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { EASE_OUT, EASE_EXIT } from './lib/motion';
+import { GridReveal } from './components/GridReveal';
+import { Toaster } from './components/ui/Toast';
+import { GridToggle } from './components/ui/GridToggle';
+import { BackToTop } from './components/ui/BackToTop';
+
+// Inner pages load on demand: the home page ships without them
+const BlogPage = lazy(() => import('./components/BlogPage').then((m) => ({ default: m.BlogPage })));
+const ProjectsPage = lazy(() => import('./components/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
+const ContactPage = lazy(() => import('./components/ContactPage').then((m) => ({ default: m.ContactPage })));
+const KanbanBoard = lazy(() => import('./components/KanbanBoard').then((m) => ({ default: m.KanbanBoard })));
+const ExperimentsPage = lazy(() => import('./components/ExperimentsPage').then((m) => ({ default: m.ExperimentsPage })));
+const CommandPalette = lazy(() => import('./components/CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 function App() {
   const [currentView, setCurrentView] = useState('home');
@@ -18,11 +23,38 @@ function App() {
 
   // -- Init isLoading based on session/daily persistence --
   const [isLoading, setIsLoading] = useState(() => {
-    // Only show preloader on the MAIN page (no hash)
-    // It will show EVERY time the page is reloaded on the main route
-    const isMainPage = !window.location.hash || window.location.hash === '#';
-    return isMainPage;
+    // Preloader: main route only, once per session, never for reduced motion
+    const isMainPage = window.location.pathname === '/' && (!window.location.hash || window.location.hash === '#');
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    let seen = false;
+    try { seen = sessionStorage.getItem('preloader-seen') === '1'; } catch { }
+    return isMainPage && !reducedMotion && !seen;
   });
+
+  // Easter egg: switch tabs and the title notices you left
+  useEffect(() => {
+    let saved = '';
+    const onVisibility = () => {
+      if (document.hidden) {
+        saved = document.title;
+        document.title = 'Still drafting… come back';
+      } else if (saved) {
+        document.title = saved;
+        saved = '';
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  // Easter egg for whoever opens devtools: a hello in the console, once per load
+  useEffect(() => {
+    console.log(
+      '%c</>%c  Hey, you opened the console. Fellow detail person.\n\nTry: press G for the layout grid, triple-click my name, long-press my photo, tap the handwritten time, tap the heart in the footer.\nSay hi at syednotion@gmail.com',
+      'font: 700 14px ui-monospace, monospace; color: #fff; background: #000; padding: 4px 8px; border-radius: 999px;',
+      'font: 13px/1.6 Inter, system-ui, sans-serif; color: inherit;'
+    );
+  }, []);
 
   // --- Hash Handling for Persistence ---
   useEffect(() => {
@@ -45,8 +77,14 @@ function App() {
       }
     };
 
-    // Initial check
-    handleHashChange();
+    // Crawlable article URLs (/articles/<id>) are real static pages; open the article
+    const pathArticle = window.location.pathname.match(/^\/articles\/([\w-]+)\/?$/);
+    if (pathArticle && !window.location.hash) {
+      setCurrentView('blogs');
+      setActiveArticle(pathArticle[1]);
+    } else {
+      handleHashChange();
+    }
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -64,9 +102,10 @@ function App() {
     return () => clearTimeout(failsafeTimer);
   }, [isLoading]);
 
-  // Debug: Log when app renders
   useEffect(() => {
-    console.log("App rendered, isLoading:", isLoading);
+    if (!isLoading) {
+      try { sessionStorage.setItem('preloader-seen', '1'); } catch { }
+    }
   }, [isLoading]);
 
   // Toggle Theme
@@ -100,7 +139,7 @@ function App() {
       if (currentView !== 'home') {
         setCurrentView('home');
         // Allow time for Home component to mount
-        setTimeout(scrollToContact, 100);
+        setTimeout(scrollToContact, 450);
       } else {
         // If already on home, just scroll
         scrollToContact();
@@ -114,6 +153,11 @@ function App() {
       return;
     }
 
+    // Leaving a landing URL like /articles/<id>: go back to the root so a refresh lands where you are
+    if (window.location.pathname !== '/') {
+      window.history.replaceState(null, '', '/');
+    }
+
     // Update hash which triggers the effect
     const newHash = view === 'home' ? '' : (view + (articleId ? `/article/${articleId}` : ''));
     if (window.location.hash.slice(1) !== newHash) {
@@ -124,29 +168,42 @@ function App() {
       setActiveArticle(articleId || null);
     }
 
-    // Scroll handling
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll is reset in onExitComplete, while the screen is blank
   };
 
   return (
 
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white selection:bg-blue-100 dark:selection:bg-white/20 transition-colors duration-300 font-sans">
+    <MotionConfig reducedMotion="user">
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white transition-colors duration-300 font-sans">
 
       <AnimatePresence mode="wait">
+      {/* Site-wide: a toast for small confirmations, and the G-key layout grid */}
+      <Toaster />
+      <GridToggle />
+
+        {/* Intro plate: the page's grid draws itself, then clears to reveal the site */}
         {isLoading && (
-          <Preloader onComplete={() => {
-            console.log("Preloader completed");
-            setIsLoading(false);
-          }} />
+          <GridReveal onComplete={() => setIsLoading(false)} />
         )}
       </AnimatePresence>
 
-      <div className="relative z-0">
+      {/* Page transitions: opacity only — a transform here would break the fixed navigation */}
+      <AnimatePresence mode="wait" onExitComplete={() => window.scrollTo(0, 0)}>
+      <motion.div
+        key={currentView + (activeArticle ?? '')}
+        className="relative z-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, transition: { duration: 0.4, ease: EASE_OUT } }}
+        exit={{ opacity: 0, transition: { duration: 0.16, ease: EASE_EXIT } }}
+      >
+        {/* Black placeholder while an inner page's chunk loads, so nothing flashes */}
+        <Suspense fallback={<div className="min-h-[100dvh] bg-black" />}>
         {currentView === 'home' && (
           <PortfolioHome
             onNavigate={handleNavigate}
             toggleTheme={toggleTheme}
             isDark={isDark}
+            introReady={!isLoading}
           />
         )}
 
@@ -182,17 +239,29 @@ function App() {
         {currentView === 'experiments' && (
           <ExperimentsPage onNavigate={handleNavigate} />
         )}
-      </div>
+        </Suspense>
+      </motion.div>
+      </AnimatePresence>
 
-      {currentView !== 'home' && <Footer />}
+      {/* Home and Lab carry their own footers */}
+      {currentView !== 'home' && currentView !== 'experiments' && <Footer />}
 
-      <CommandPalette
-        onNavigate={handleNavigate}
-        toggleTheme={toggleTheme}
-        isDark={isDark}
-      />
+      {/* Back to top everywhere; sits above the search pill where that pill exists */}
+      <BackToTop raised={currentView !== 'home' && currentView !== 'experiments' && currentView !== 'kanban'} />
+
+      {/* Home and Lab are quiet single pages, so no floating search pill there */}
+      {currentView !== 'home' && currentView !== 'experiments' && currentView !== 'kanban' && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            onNavigate={handleNavigate}
+            toggleTheme={toggleTheme}
+            isDark={isDark}
+          />
+        </Suspense>
+      )}
 
     </div>
+    </MotionConfig>
 
   );
 }

@@ -22,10 +22,11 @@ import {
     Copy,
     Github,
     Twitter,
-    Linkedin,
     AtSign,
     LayoutTemplate,
-    Beaker
+    Beaker,
+    Sparkles,
+    Atom
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 
@@ -54,6 +55,7 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [hoveredCommandId, setHoveredCommandId] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
     const shouldReduceMotion = useReducedMotion();
 
     // Handle Keyboard Shortcut (Cmd+K)
@@ -70,6 +72,13 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    // Close when the route changes underneath (e.g. browser back)
+    useEffect(() => {
+        const close = () => setIsOpen(false);
+        window.addEventListener("hashchange", close);
+        return () => window.removeEventListener("hashchange", close);
     }, []);
 
     // Define Commands with actions
@@ -101,7 +110,7 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
         {
             id: "blogs",
             icon: FileText,
-            label: "Read Blog",
+            label: "Read Articles",
             shortcut: "B",
             description: "Read my latest articles",
             action: () => onNavigate("blogs"),
@@ -137,8 +146,23 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
             description: "Copy my email address to clipboard",
             action: () => {
                 navigator.clipboard.writeText("syednotion@gmail.com");
-                alert("Email copied to clipboard!");
+                setCopied(true);
             },
+        },
+        // --- Projects ---
+        {
+            id: "project-amicro",
+            icon: Sparkles,
+            label: "Amicro",
+            description: "Open-source React micro-interactions · 2.7K+ ⭐",
+            action: () => window.open("https://amicro.dev", "_blank"),
+        },
+        {
+            id: "project-oxygen",
+            icon: Atom,
+            label: "Oxygen UI",
+            description: "Solana UI primitives",
+            action: () => window.open("https://oxygenui.xyz", "_blank"),
         },
         // --- Socials ---
         {
@@ -146,21 +170,14 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
             icon: Github,
             label: "GitHub",
             description: "Check out my open source work",
-            action: () => window.open("https://github.com/syedsubhan", "_blank"),
+            action: () => window.open("https://github.com/Subhan-code", "_blank"),
         },
         {
             id: "social-twitter",
             icon: Twitter,
             label: "Twitter / X",
             description: "Follow me for updates",
-            action: () => window.open("https://x.com/subhan", "_blank"),
-        },
-        {
-            id: "social-linkedin",
-            icon: Linkedin,
-            label: "LinkedIn",
-            description: "Connect with me professionally",
-            action: () => window.open("https://linkedin.com/in/syedsubhan", "_blank"),
+            action: () => window.open("https://x.com/SubhanHQ", "_blank"),
         },
         {
             id: "social-email",
@@ -181,8 +198,13 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
 
     const handleSelect = (cmd: Command) => {
         cmd.action();
-        setIsOpen(false);
-        setQuery("");
+        // Copy confirms in place, then closes — no browser alert
+        const delay = cmd.id === "copy-email" ? 700 : 0;
+        setTimeout(() => {
+            setIsOpen(false);
+            setQuery("");
+            setCopied(false);
+        }, delay);
     };
 
     const panelVariants: Variants = shouldReduceMotion
@@ -192,35 +214,37 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
             exit: { opacity: 0, y: 0, scale: 1 },
         }
         : {
-            initial: { opacity: 0, scale: 0.96, y: 20, filter: "blur(6px)" },
+            initial: { opacity: 0, scale: 0.97, y: -6, filter: "blur(8px)" },
             animate: {
                 opacity: 1,
                 scale: 1,
                 y: 0,
                 filter: "blur(0px)",
-                transition: { duration: 0.28, ease: [0.18, 0.89, 0.32, 1.12] },
+                transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
             },
             exit: {
                 opacity: 0,
-                scale: 0.97,
-                y: 12,
-                filter: "blur(8px)",
-                transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
+                scale: 0.98,
+                y: -4,
+                filter: "blur(6px)",
+                transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
             },
         };
 
     return (
         <>
             {/* Floating Trigger Button */}
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="fixed right-6 z-50" style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}>
                 <motion.button
                     type="button"
                     onClick={() => setIsOpen(true)}
-                    className="group flex items-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/80 px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400 shadow-lg backdrop-blur-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
-                    whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
+                    className="group flex items-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/80 px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400 shadow-lg backdrop-blur-lg transition-shadow duration-300 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    aria-label="Open search"
+                    whileHover={shouldReduceMotion ? undefined : { scale: 1.03 }}
+                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                    transition={{ type: "spring", duration: 0.3, bounce: 0 }}
                 >
-                    <Search className="h-4 w-4 text-gray-800 dark:text-gray-200" aria-hidden />
+                    <Search className="h-4 w-4 text-gray-800 dark:text-gray-200" strokeWidth={1.75} aria-hidden />
                     <span className="font-medium hidden md:inline">Search</span>
                     <kbd className="hidden md:inline-flex ml-2 items-center rounded border border-gray-200 dark:border-white/20 px-1.5 font-mono text-[10px] font-medium text-gray-400 dark:text-gray-500">
                         ⌘K
@@ -237,66 +261,48 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
                             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                            exit={{ opacity: 0, transition: { duration: 0.16 } }}
                             transition={overlayTransition}
                             onClick={() => setIsOpen(false)}
                         />
 
-                        <div className="fixed inset-0 z-[65] flex items-start justify-center px-4 pt-24 sm:px-6 pointer-events-none">
+                        <div className="fixed inset-0 z-[65] flex items-start justify-center px-3 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-24 sm:px-6 pointer-events-none">
                             <motion.div
                                 role="dialog"
                                 aria-modal="true"
                                 aria-label="Command palette"
                                 {...panelVariants}
-                                className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-gray-200 dark:border-white/10 bg-white/90 dark:bg-[#111]/90 backdrop-blur-2xl shadow-2xl pointer-events-auto"
+                                style={{ transformOrigin: "top center" }}
+                                className="relative w-full max-w-xl overflow-hidden rounded-[22px] border border-gray-200 dark:border-white/10 bg-white/90 dark:bg-[#111]/90 backdrop-blur-2xl shadow-2xl pointer-events-auto"
                                 onClick={(event: React.MouseEvent) => event.stopPropagation()}
                             >
-                                {/* Background Blobs */}
-                                <div
-                                    aria-hidden
-                                    className="pointer-events-none absolute inset-0 overflow-hidden"
-                                >
-                                    <motion.div
-                                        className="absolute -top-20 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-500/10 blur-[100px]"
-                                        animate={
-                                            shouldReduceMotion
-                                                ? undefined
-                                                : {
-                                                    opacity: [0.3, 0.6, 0.3],
-                                                    scale: [0.92, 1.08, 0.98],
-                                                }
-                                        }
-                                        transition={
-                                            shouldReduceMotion
-                                                ? undefined
-                                                : { duration: 8, repeat: Infinity, ease: "easeInOut" }
-                                        }
-                                    />
-                                </div>
-
                                 {/* Search Input */}
                                 <div className="relative flex items-center gap-3 border-b border-gray-200 dark:border-white/10 px-5 py-4">
-                                    <Search className="h-5 w-5 text-gray-400" aria-hidden />
+                                    <Search className="h-5 w-5 text-gray-400" strokeWidth={1.75} aria-hidden />
                                     <input
                                         type="text"
                                         value={query}
                                         onChange={(event) => setQuery(event.target.value)}
                                         placeholder="Search commands..."
-                                        className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                                        enterKeyHint="search"
+                                        autoCapitalize="none"
+                                        autoCorrect="off"
+                                        className="flex-1 min-w-0 bg-transparent text-base sm:text-sm text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
                                         autoFocus
                                     />
                                     <motion.button
                                         type="button"
                                         onClick={() => setIsOpen(false)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                        aria-label="Close search"
+                                        className="inline-flex h-9 w-9 -mr-2 items-center justify-center rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white active:scale-[0.97] transition-[color,transform] duration-150"
                                     >
-                                        <X className="h-4 w-4" aria-hidden />
+                                        <X className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
                                     </motion.button>
                                 </div>
 
                                 {/* Command List */}
                                 <motion.div
-                                    className="relative max-h-[60vh] overflow-y-auto px-2 py-2"
+                                    className="relative max-h-[min(60vh,520px)] overflow-y-auto overscroll-contain px-2 py-2"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ duration: 0.3 }}
@@ -314,16 +320,16 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
                                                         key={cmd.id}
                                                         initial={{
                                                             opacity: shouldReduceMotion ? 1 : 0,
-                                                            y: shouldReduceMotion ? 0 : 10,
+                                                            y: shouldReduceMotion ? 0 : 6,
                                                         }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={
                                                             shouldReduceMotion
                                                                 ? { duration: 0 }
                                                                 : {
-                                                                    delay: 0.03 * index,
-                                                                    duration: 0.2,
-                                                                    ease: "easeOut",
+                                                                    delay: Math.min(index, 8) * 0.02,
+                                                                    duration: 0.25,
+                                                                    ease: [0.16, 1, 0.3, 1],
                                                                 }
                                                         }
                                                     >
@@ -332,17 +338,21 @@ export function CommandPalette({ onNavigate, toggleTheme, isDark }: CommandPalet
                                                             onClick={() => handleSelect(cmd)}
                                                             onMouseEnter={() => setHoveredCommandId(cmd.id)}
                                                             onMouseLeave={() => setHoveredCommandId(null)}
-                                                            className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-white/5 focus:bg-gray-100 dark:focus:bg-white/5 outline-none"
+                                                            className="group flex w-full items-center justify-between rounded-[14px] px-3.5 py-3 text-left transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-white/5 focus:bg-gray-100 dark:focus:bg-white/5 active:bg-gray-200/70 dark:active:bg-white/10 outline-none"
                                                         >
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
-                                                                    <Icon className="h-4 w-4" aria-hidden />
-                                                                </span>
-                                                                <div className="flex flex-col">
+                                                            <div className="flex items-center gap-3.5 min-w-0">
+                                                                <Icon
+                                                                    className="h-[18px] w-[18px] shrink-0 text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white group-focus:text-gray-900 dark:group-focus:text-white transition-colors duration-150"
+                                                                    strokeWidth={1.75}
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    aria-hidden
+                                                                />
+                                                                <div className="flex flex-col min-w-0">
                                                                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                                        {cmd.id === 'social-email' && hoveredCommandId === 'social-email' ? "syednotion@gmail.com" : cmd.label}
+                                                                        {cmd.id === 'copy-email' && copied ? "Copied" : cmd.id === 'social-email' && hoveredCommandId === 'social-email' ? "syednotion@gmail.com" : cmd.label}
                                                                     </span>
-                                                                    <span className="text-xs text-gray-500 dark:text-gray-500">
+                                                                    <span className="text-xs text-gray-500 dark:text-gray-500 truncate">
                                                                         {cmd.description}
                                                                     </span>
                                                                 </div>

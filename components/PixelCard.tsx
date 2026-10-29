@@ -89,8 +89,8 @@ void main() {
 
 // --- Scene Component ---
 const PixelScene = ({ imageSrc, isHovered, containerSize }) => {
-    const meshRef = useRef();
-    const texture = useTexture(imageSrc);
+    const meshRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>>(null);
+    const texture = useTexture(imageSrc) as THREE.Texture & { image: HTMLImageElement };
     const { viewport } = useThree();
 
     const uniforms = useMemo(() => ({

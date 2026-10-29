@@ -96,7 +96,7 @@ export const PreviewLinkCard: React.FC<PreviewLinkCardProps> = ({
                                     className="w-full h-full object-cover transform scale-105"
                                 />
                                 {/* "Article" Badge */}
-                                <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/80 dark:bg-white/90 backdrop-blur-md text-white dark:text-black text-[8px] font-bold uppercase tracking-wider rounded-full shadow-sm border border-white/20 dark:border-black/10">
+                                <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/80 dark:bg-white/90 backdrop-blur-md text-white dark:text-black text-caption font-bold uppercase tracking-wider rounded-full shadow-sm border border-white/20 dark:border-black/10">
                                     Article
                                 </div>
                             </div>
@@ -104,7 +104,7 @@ export const PreviewLinkCard: React.FC<PreviewLinkCardProps> = ({
                             {/* Content Area */}
                             <div className="px-2 pt-1 pb-3 relative">
                                 {/* Metadata Row */}
-                                <div className="flex items-center gap-2 mb-1.5 text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                                <div className="flex items-center gap-2 mb-1.5 text-caption font-semibold text-gray-400 uppercase tracking-wider">
                                     {date && (
                                         <div className="flex items-center gap-1">
                                             <Calendar size={9} />
@@ -119,11 +119,11 @@ export const PreviewLinkCard: React.FC<PreviewLinkCardProps> = ({
                                     )}
                                 </div>
 
-                                <h4 className="text-xs font-black text-black dark:text-white leading-tight line-clamp-2 mb-1.5 tracking-tight">
+                                <h4 className="text-subhead font-semibold text-black dark:text-white line-clamp-2 mb-1.5">
                                     {title}
                                 </h4>
 
-                                <p className="text-[9px] font-medium text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
+                                <p className="text-caption text-gray-500 dark:text-gray-400 line-clamp-2">
                                     {displayDesc}
                                 </p>
                             </div>

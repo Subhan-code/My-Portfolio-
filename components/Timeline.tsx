@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TimelineProps {
   sections: { id: string; title: string }[];
@@ -34,6 +34,7 @@ export default function Timeline({ sections, activeId, onSectionClick }: Timelin
             <button
               key={section.id}
               className="relative inline-flex items-center justify-start py-1"
+              aria-label={section.title}
               onMouseEnter={() => handleMouseEnter(i)}
               onMouseLeave={handleMouseLeave}
               onClick={() => onSectionClick(section.id)}
@@ -50,11 +51,12 @@ export default function Timeline({ sections, activeId, onSectionClick }: Timelin
                       width: isSelected ? 32 : 16, // Width expands for active
                     }}
                     initial={{ scale: 0.4, width: 16 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
                   />
               </div>
               
               {/* Tooltip on Hover */}
+              <AnimatePresence>
               {(hoveredIndex === i || isSelected) && (
                 <motion.span
                     className={`absolute left-10 text-[11px] font-medium whitespace-nowrap bg-white dark:bg-[#222] px-2 py-1 rounded-md shadow-lg border border-gray-100 dark:border-white/10 z-50 ${
@@ -62,14 +64,16 @@ export default function Timeline({ sections, activeId, onSectionClick }: Timelin
                         ? 'text-blue-600 dark:text-white'
                         : 'text-gray-500 dark:text-gray-400'
                     }`}
-                    initial={{ opacity: 0, x: -5, scale: 0.9 }}
+                    style={{ transformOrigin: 'left center' }}
+                    initial={{ opacity: 0, x: -4, scale: 0.96 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -5, scale: 0.9 }}
-                    transition={{ duration: 0.15 }}
+                    exit={{ opacity: 0, x: -4, scale: 0.96, transition: { duration: 0.1 } }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                 >
                     {section.title}
                 </motion.span>
               )}
+              </AnimatePresence>
             </button>
           );
         })}

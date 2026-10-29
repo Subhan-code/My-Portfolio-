@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, Activity, Settings2, Wind, Layers } from 'lucide-react';
+import { ChevronLeft, Clock, Activity, Settings2, Wind, Layers } from 'lucide-react';
 import { triggerHaptic } from '../../lib/utils';
 
 export default function SpringPhysics({ onBack }: { onBack: () => void }) {
@@ -17,7 +17,7 @@ export default function SpringPhysics({ onBack }: { onBack: () => void }) {
                 onClick={() => { triggerHaptic(5); onBack(); }}
                 className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors mb-12 group"
             >
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 Back to home
             </button>
 
@@ -30,17 +30,17 @@ export default function SpringPhysics({ onBack }: { onBack: () => void }) {
                         <Clock size={14} /> 7 min read
                     </span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-serif font-medium text-gray-900 dark:text-white mb-6 leading-tight">
+                <h1 className="text-4xl md:text-5xl font-medium text-gray-900 dark:text-white mb-6 leading-tight">
                     Motion with Intent: The Art of Spring Physics
                 </h1>
-                <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed font-serif italic">
+                <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed italic">
                     How natural physics can transform digital interfaces from static pages into living, breathing experiences.
                 </p>
             </header>
 
             <div className="prose prose-lg dark:prose-invert prose-gray max-w-none">
                 <p>
-                    Duration-based animations are a lie. In the real world, things don't just "take 300ms" to happen. They have mass, they encounter friction, and they dissipate energy. To build truly immersive interfaces, we must look to the laws of motion—specifically, <strong>Hooke's Law</strong>.
+                    Duration-based animations are a lie. In the real world, things don't just "take 300ms" to happen. They have mass, they encounter friction, and they dissipate energy. To build truly immersive interfaces, we must look to the laws of motion, specifically <strong>Hooke's Law</strong>.
                 </p>
 
                 <h2 className="flex items-center gap-3">
@@ -54,12 +54,12 @@ export default function SpringPhysics({ onBack }: { onBack: () => void }) {
                 <div className="my-10 grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
                     <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
                         <Settings2 className="text-blue-500 mb-4" size={24} />
-                        <h4 className="text-lg font-serif mb-2">High Stiffness</h4>
+                        <h4 className="text-lg mb-2">High Stiffness</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Creates "snappy" interactions perfect for buttons and small UI feedback.</p>
                     </div>
                     <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
                         <Wind className="text-purple-500 mb-4" size={24} />
-                        <h4 className="text-lg font-serif mb-2">Low Damping</h4>
+                        <h4 className="text-lg mb-2">Low Damping</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Allows for "bouncy" or playful motion, ideal for notifications and reveals.</p>
                     </div>
                 </div>
@@ -93,7 +93,7 @@ export default function SpringPhysics({ onBack }: { onBack: () => void }) {
 
                 <h3>Conclusion</h3>
                 <p>
-                    By moving away from linear time and embracing the complexity of physics, we create interfaces that feel lighter, faster, and more intuitive. It’s not just about looking good—it’s about matching the user’s mental model of how the physical world works.
+                    By moving away from linear time and embracing the complexity of physics, we create interfaces that feel lighter, faster, and more intuitive. Itâ€™s not just about looking good. Itâ€™s about matching the userâ€™s mental model of how the physical world works.
                 </p>
             </div>
         </motion.div>

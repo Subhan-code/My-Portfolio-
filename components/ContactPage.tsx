@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { DynamicNavigation } from './DynamicNavigation';
 import { RainbowButton } from './RainbowButton';
 import { PageVisitsFooter } from './PageVisitsFooter';
+import { EASE_OUT } from '../lib/motion';
 
 interface ContactPageProps {
     onNavigate: (view: string) => void;
@@ -30,30 +31,29 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate, toggleThem
 
                     {/* Left: Info */}
                     <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
+                        initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        transition={{ duration: 0.8, ease: EASE_OUT }}
                     >
-                        <h1 className="text-6xl md:text-8xl font-serif text-gray-900 dark:text-white mb-8 leading-[0.9]">
+                        <h1 className="text-display text-gray-900 dark:text-white mb-8">
                             Let's work <br /> <span className="text-gray-400 dark:text-gray-600">together.</span>
                         </h1>
 
-                        <div className="space-y-8 text-lg text-gray-600 dark:text-gray-300">
+                        <div className="space-y-8 text-body text-gray-600 dark:text-gray-300">
                             <p>
                                 I'm currently available for freelance projects and open to full-time opportunities.
                             </p>
 
                             <div>
-                                <div className="text-sm font-mono text-gray-400 mb-1 uppercase tracking-wider">Email</div>
-                                <a href="mailto:hello@syedsubhan.com" className="text-xl hover:text-blue-500 transition-colors">hello@syedsubhan.com</a>
+                                <div className="text-footnote font-mono text-gray-400 mb-1 uppercase tracking-wider">Email</div>
+                                <a href="mailto:syednotion@gmail.com" className="text-headline hover:text-blue-500 transition-colors">syednotion@gmail.com</a>
                             </div>
 
                             <div>
-                                <div className="text-sm font-mono text-gray-400 mb-1 uppercase tracking-wider">Socials</div>
+                                <div className="text-footnote font-mono text-gray-400 mb-1 uppercase tracking-wider">Socials</div>
                                 <div className="flex gap-6">
-                                    <a href="#" className="hover:text-blue-500 transition-colors">Twitter</a>
-                                    <a href="#" className="hover:text-blue-500 transition-colors">LinkedIn</a>
-                                    <a href="#" className="hover:text-blue-500 transition-colors">GitHub</a>
+                                    <a href="https://x.com/SubhanHQ" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 transition-colors">Twitter</a>
+                                    <a href="https://github.com/Subhan-code" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 transition-colors">GitHub</a>
                                 </div>
                             </div>
                         </div>
@@ -61,14 +61,14 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate, toggleThem
 
                     {/* Right: Form */}
                     <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
+                        initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        transition={{ duration: 0.8, delay: 0.08, ease: EASE_OUT }}
                         className="bg-gray-50 dark:bg-[#111] p-8 rounded-3xl border border-gray-200 dark:border-white/5"
                     >
                         <form className="flex flex-col gap-6">
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-medium text-gray-900 dark:text-white">Name</label>
+                                <label className="text-subhead font-medium text-gray-900 dark:text-white">Name</label>
                                 <input
                                     type="text"
                                     placeholder="John Doe"
@@ -77,7 +77,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate, toggleThem
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                                <label className="text-subhead font-medium text-gray-900 dark:text-white">Email</label>
                                 <input
                                     type="email"
                                     placeholder="john@example.com"
@@ -86,7 +86,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate, toggleThem
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-medium text-gray-900 dark:text-white">Message</label>
+                                <label className="text-subhead font-medium text-gray-900 dark:text-white">Message</label>
                                 <textarea
                                     rows={4}
                                     placeholder="Tell me about your project..."

@@ -30,7 +30,7 @@ export const InterfaceDesign: React.FC<{
                 We are moving beyond the screen. As technology dissolves into our environment, interfaces are becoming less about pixels and more about intent, context, and physical interaction.
             </p>
 
-            <h2 id="spatial" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Spatial Computing</h2>
+            <h2 id="spatial" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Spatial Computing</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 With the rise of headsets like the Vision Pro, UI is no longer bounded by a rectangle. Windows cast shadows on your desk. Information floats in mid-air. The challenge for designers is to create depth and presence without overwhelming the user's cognitive load.
@@ -41,19 +41,19 @@ export const InterfaceDesign: React.FC<{
                 <p className="text-gray-600 dark:text-gray-400">From 2D constraints to 3D affordances. Buttons shouldn't just look clickable; they should feel pressable in space.</p>
             </div>
 
-            <h2 id="ai-interfaces" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Generative UI</h2>
+            <h2 id="ai-interfaces" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Generative UI</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Why build static menus when an AI can generate the exact control you need, right when you need it? Generative UI creates ephemeral interfaces tailored to the user's immediate goal.
             </p>
 
-            <h2 id="haptics" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Tactile Feedback</h2>
+            <h2 id="haptics" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Tactile Feedback</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 As glass screens disappear, haptics become the primary confirmation mechanism. Subtle vibrations, resistance, and texture simulation will define how quality software feels.
             </p>
 
-            <h2 id="conclusion" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Conclusion</h2>
+            <h2 id="conclusion" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Conclusion</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 The best interface is no interface. Our goal is to remove friction until only the intention remains.

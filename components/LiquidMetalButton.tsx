@@ -89,7 +89,7 @@ export const LiquidMetalButton = forwardRef<HTMLButtonElement, LiquidMetalButton
           if (onClick) onClick(e);
         }}
         className={cn(
-          "group relative cursor-pointer border-none bg-transparent p-0 outline-none transition-transform active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+          "group relative cursor-pointer border-none bg-transparent p-0 outline-none transition-transform active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed",
           className
         )}
         {...props}
@@ -124,7 +124,7 @@ export const LiquidMetalButton = forwardRef<HTMLButtonElement, LiquidMetalButton
                 {icon}
               </div>
             )}
-            <span className="font-semibold tracking-tight text-neutral-900 dark:text-white">
+            <span className="font-semibold text-neutral-900 dark:text-white">
               {children}
             </span>
           </div>

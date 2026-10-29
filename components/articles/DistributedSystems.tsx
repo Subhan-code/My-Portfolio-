@@ -30,7 +30,7 @@ export const DistributedSystems: React.FC<{
                 When your application grows from a single server to a global fleet, the rules change. Latency isn't just a number; it's a geography problem. Consistency becomes a trade-off, not a guarantee.
             </p>
 
-            <h2 id="cap-theorem" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">The CAP Theorem</h2>
+            <h2 id="cap-theorem" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">The CAP Theorem</h2>
 
             <p className="text-gray-800 dark:text-gray-300 mb-4">
                 Consistency, Availability, Partition Tolerance. You can pick two. In a distributed system, network partitions are inevitable (P is mandatory), so the real choice is between C and A.
@@ -47,19 +47,19 @@ export const DistributedSystems: React.FC<{
                 </div>
             </div>
 
-            <h2 id="event-sourcing" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Event Sourcing</h2>
+            <h2 id="event-sourcing" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Event Sourcing</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Instead of storing the current state, store the sequence of events that led to it. This provides a perfect audit log and allows for time-travel debugging.
             </p>
 
-            <h2 id="sharding" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Database Sharding</h2>
+            <h2 id="sharding" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Database Sharding</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Splitting your database horizontally across multiple machines. The key challenge is choosing a good shard key to prevent "hot spots" where one server takes all the load.
             </p>
 
-            <h2 id="conclusion" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Conclusion</h2>
+            <h2 id="conclusion" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Conclusion</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Scaling is as much about architecture as it is about discipline. Simple, stateless services are easier to scale than stateful monoliths.

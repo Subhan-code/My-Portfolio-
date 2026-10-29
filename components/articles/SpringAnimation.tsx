@@ -78,7 +78,7 @@ export const SpringAnimation: React.FC<{
                 Spring animations are heavily used in iOS; they’re also the default animation in SwiftUI. When I tried recreating the Dynamic Island for the web, I said that it feels like a living organism. It’s mainly because of the spring animation being applied there.
             </p>
 
-            <h2 id="crafting-springs" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">How to craft a spring animation?</h2>
+            <h2 id="crafting-springs" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">How to craft a spring animation?</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Like we said before, spring animations are created by describing the behavior of an object attached to a spring. This is done by providing values for mass, tension, and velocity.
@@ -99,19 +99,19 @@ export const SpringAnimation: React.FC<{
                 </div>
             </div>
 
-            <h2 id="perceptual-duration" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Perceptual duration</h2>
+            <h2 id="perceptual-duration" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Perceptual duration</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Apple has come up with an alternative method for configuring springs, based solely on duration and bounce. Framer Motion allows you to define a spring animation with the same approach.
             </p>
 
-            <h2 id="interruptibility" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Interruptibility</h2>
+            <h2 id="interruptibility" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Interruptibility</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 Sometimes, when an animation hasn’t yet finished, we need to redirect it. When that happens, a spring animation uses the velocity it had when it was re-targeted making the movement feel smooth and natural.
             </p>
 
-            <h2 id="bounce" className="text-3xl font-serif mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Bounce</h2>
+            <h2 id="bounce" className="text-3xl mt-16 mb-6 text-gray-900 dark:text-white scroll-mt-32">Bounce</h2>
 
             <p className="text-gray-800 dark:text-gray-300">
                 While spring animations can have a bouncy effect, there are only a few instances in product UI where a bounce is appropriate.
@@ -119,7 +119,7 @@ export const SpringAnimation: React.FC<{
 
             <hr className="border-gray-200 dark:border-white/10 my-16" />
 
-            <h2 id="12-principles" className="text-4xl font-serif mb-8 text-gray-900 dark:text-white scroll-mt-32">12 Principles of Animation</h2>
+            <h2 id="12-principles" className="text-4xl mb-8 text-gray-900 dark:text-white scroll-mt-32">12 Principles of Animation</h2>
 
             <p className="text-gray-800 dark:text-gray-300 mb-8">
                 Disney animators codified these principles in the 1930s to make drawings feel real. We use them to make pixels feel human. The problems are surprisingly similar.

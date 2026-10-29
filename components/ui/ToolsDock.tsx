@@ -1,130 +1,109 @@
-import React, { useLayoutEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useAnimationControls, useMotionValue, useReducedMotion, useSpring, useTransform, type MotionValue } from 'framer-motion';
+import { cn, triggerHaptic } from '../../lib/utils';
+import { TooltipCard } from './Tooltip';
 
-// Register GSAP Plugin
-gsap.registerPlugin(ScrollTrigger);
+/*
+ * The tools I work in, as a macOS dock. Icons swell toward the pointer (neighbours a
+ * little, the one under it most), sit in grey until hovered, name themselves in a
+ * tooltip, and hop like a launching app when clicked. Touch gets a still row; a tap
+ * still hops.
+ */
 
-interface Tool {
-    name: string;
-    icon: string;
-    bg: string;
-}
-
-const tools: Tool[] = [
-    { name: 'Discord', icon: '/AppIcons/discord.png', bg: 'bg-[#5865F2]/10' },
-    { name: 'VS Code', icon: '/AppIcons/vscode.png', bg: 'bg-[#007ACC]/10' },
-    { name: 'Medium', icon: '/AppIcons/medium.png', bg: 'bg-black dark:bg-white' },
-    { name: 'Notion', icon: '/AppIcons/notion.png', bg: 'bg-black dark:bg-white' },
-    { name: 'Brave', icon: '/AppIcons/brave.png', bg: 'bg-[#FB542B]/10' }, // Center
-    { name: 'Motion.dev', icon: '/AppIcons/motion.png', bg: 'bg-[#0055FF]/10' },
-    { name: 'Figma', icon: '/AppIcons/figma.png', bg: 'bg-[#0055FF]/10' },
-    { name: 'Gumroad', icon: '/AppIcons/gumroad.png', bg: 'bg-[#FF90E8]/10' },
-    { name: 'Reddit', icon: '/AppIcons/reddit.png', bg: 'bg-[#5E6AD2]/10' },
+const TOOLS = [
+    { name: 'Figma', icon: '/AppIcons/figma.png' },
+    { name: 'VS Code', icon: '/AppIcons/vscode.png' },
+    { name: 'Motion', icon: '/AppIcons/motion.png' },
+    { name: 'Notion', icon: '/AppIcons/notion.png' },
+    { name: 'Brave', icon: '/AppIcons/brave.png' },
+    { name: 'Discord', icon: '/AppIcons/discord.png' },
+    { name: 'Gumroad', icon: '/AppIcons/gumroad.png' },
+    { name: 'Reddit', icon: '/AppIcons/reddit.png' },
 ];
 
-export const ToolsDock: React.FC = () => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const textRef = useRef<HTMLDivElement>(null);
-    const iconsRef = useRef<Array<HTMLDivElement | null>>([]);
+// Resting size, the size right under the pointer, and how far the swell reaches
+const BASE = { phone: 30, desk: 40 };
+const PEAK = 58;
+const REACH = 130;
 
-    const headerText = "{ Crafting with my Core Tools }";
-    const headerChars = headerText.split('');
-    const centerIndex = 4; // Brave
+const DockIcon = ({ name, icon, mouseX, base }: { name: string; icon: string; mouseX: MotionValue<number>; base: number }) => {
+    const ref = useRef<HTMLButtonElement>(null);
+    const reduce = useReducedMotion();
+    const hop = useAnimationControls();
+    const [hover, setHover] = useState(false);
 
-    useLayoutEffect(() => {
-        // GSAP Context to ensure cleanup
-        const ctx = gsap.context(() => {
+    // Distance from the pointer to this icon's centre drives its size, through a spring
+    const distance = useTransform(mouseX, (x) => {
+        const r = ref.current?.getBoundingClientRect();
+        return r ? x - (r.left + r.width / 2) : Infinity;
+    });
+    const target = useTransform(distance, [-REACH, 0, REACH], [base, reduce ? base : PEAK, base]);
+    const size = useSpring(target, { mass: 0.1, stiffness: 180, damping: 13 });
 
-            const tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: containerRef.current,
-                    start: "top 95%",
-                    end: "bottom 30%",
-                    scrub: 1.2,
-                }
-            });
+    const launch = () => {
+        triggerHaptic(8);
+        if (reduce) return;
+        // Two hops, the second smaller, the way the dock bounces an opening app
+        hop.start({ y: [0, -14, 0, -6, 0], transition: { duration: 0.8, times: [0, 0.28, 0.55, 0.75, 1], ease: 'easeOut' } });
+    };
 
+    return (
+        <motion.button
+            ref={ref}
+            type="button"
+            aria-label={name}
+            onClick={launch}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            style={{ width: size, height: size }}
+            className="group relative shrink-0"
+        >
+            <AnimatePresence>
+                {hover && (
+                    <TooltipCard side="top" align="center" width="auto" className="!px-2.5 !py-1 !rounded-full text-[12px] font-medium text-neutral-50 pointer-events-none">
+                        {name}
+                    </TooltipCard>
+                )}
+            </AnimatePresence>
+            {/* Every icon on the same tile, so mixed icon files read as one set */}
+            <motion.span animate={hop} className="block w-full h-full rounded-[22%] overflow-hidden bg-[#171717]">
+                <img
+                    src={icon}
+                    alt=""
+                    draggable={false}
+                    className={cn(
+                        "w-full h-full object-cover select-none transition-[filter] duration-300",
+                        // Grey at rest, its own colour under the pointer
+                        "[@media(hover:hover)_and_(pointer:fine)]:grayscale [@media(hover:hover)_and_(pointer:fine)]:group-hover:grayscale-0"
+                    )}
+                />
+            </motion.span>
+        </motion.button>
+    );
+};
 
+export const ToolsDock = () => {
+    const mouseX = useMotionValue(Infinity);
+    const [base, setBase] = useState(BASE.desk);
 
-            // 1. Animate Text (Split char stagger)
-            const chars = textRef.current?.children;
-            if (chars) {
-                tl.fromTo(chars,
-                    { y: 30, opacity: 0, skewY: 5 },
-                    { y: 0, opacity: 1, skewY: 0, duration: 1, stagger: { amount: 0.8, from: "center" }, ease: "power2.out" },
-                    0
-                );
-            }
-
-            // 2. Animate Icons
-            const icons = iconsRef.current;
-            icons.forEach((icon, index) => {
-                if (!icon) return;
-                const dist = Math.abs(index - centerIndex);
-
-                tl.fromTo(icon,
-                    { y: 100, opacity: 0, rotationX: 45, scale: 0.7 },
-                    {
-                        y: 0,
-                        opacity: 1,
-                        rotationX: 0,
-                        scale: index === centerIndex ? 1.3 : 1, // Increased scale for center for emphasis
-                        duration: 1.5,
-                        ease: "power2.out"
-                    },
-                    dist * 0.15 + 0.2
-                );
-            });
-
-        }, containerRef);
-
-        return () => ctx.revert();
+    // Phones get a smaller resting size so all nine fit the column
+    useEffect(() => {
+        const mq = window.matchMedia('(max-width: 639px)');
+        const set = () => setBase(mq.matches ? BASE.phone : BASE.desk);
+        set();
+        mq.addEventListener('change', set);
+        return () => mq.removeEventListener('change', set);
     }, []);
 
     return (
-        <div ref={containerRef} className="w-full flex flex-col items-center justify-center overflow-hidden relative py-2 md:py-4">
-            <div className="flex flex-col items-center gap-6 w-full max-w-6xl px-4">
-
-                <h2 ref={textRef} className="text-[clamp(0.8rem,4vw,1.8rem)] font-medium text-gray-900 dark:text-gray-100 font-mono text-center leading-tight">
-                    {headerChars.map((char, i) => (
-                        <span key={i} className="inline-block" style={{ minWidth: char === ' ' ? '0.2em' : 'auto' }}>
-                            {char === ' ' ? '\u00A0' : char}
-                        </span>
-                    ))}
-                </h2>
-
-                <div className="flex items-center justify-center gap-3 md:gap-5 px-4 py-8" style={{ perspective: '1000px' }}>
-                    {tools.map((tool, index) => (
-                        <div
-                            key={tool.name}
-                            ref={(el) => { iconsRef.current[index] = el; }}
-                            className={`
-                            relative group
-                            w-[clamp(2rem,6vw,4rem)] h-[clamp(2rem,6vw,4rem)]
-                            rounded-2xl
-                            flex items-center justify-center 
-                            bg-white dark:bg-white/5
-                            shadow-xl
-                            cursor-pointer
-                            ${index === centerIndex ? 'z-10' : 'z-0'}
-                            border border-black/5 dark:border-white/10
-                            hover:border-blue-500/50 transition-colors duration-300
-                        `}
-                        >
-                            <img
-                                src={tool.icon}
-                                alt={tool.name}
-                                className="w-full h-full object-cover rounded-2xl transform transition-transform duration-300 group-hover:scale-105"
-                            />
-
-                            <div className="absolute -bottom-10 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-gray-500 dark:text-gray-300 pointer-events-none whitespace-nowrap bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-100 dark:border-gray-700 z-50">
-                                {tool.name}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+        <div
+            onMouseMove={(e) => mouseX.set(e.clientX)}
+            onMouseLeave={() => mouseX.set(Infinity)}
+            // Tall enough for the swell, so nothing below moves when it grows
+            className="flex items-end justify-center gap-1.5 sm:gap-2.5"
+            style={{ height: PEAK + 6 }}
+        >
+            {TOOLS.map((t) => <DockIcon key={t.name} {...t} mouseX={mouseX} base={base} />)}
         </div>
     );
 };

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { POSTS } from '../lib/posts';
 import { InterfaceDesign } from './articles/InterfaceDesign';
 import { DistributedSystems } from './articles/DistributedSystems';
 import { DesignSystems } from './articles/DesignSystems';
@@ -13,6 +14,14 @@ interface BlogPageProps {
 }
 
 export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate, toggleTheme, isDark, activeArticleId }) => {
+  // Tab title matches the static page the build writes for this URL
+  const post = POSTS.find((p) => p.id === activeArticleId);
+  useEffect(() => {
+    const previous = document.title;
+    document.title = post ? `${post.title} | Syed Subhan` : 'Articles | Syed Subhan';
+    return () => { document.title = previous; };
+  }, [post]);
+
   // If no article ID, show the list
   if (!activeArticleId) {
     return <BlogListPage onNavigate={onNavigate} toggleTheme={toggleTheme} isDark={isDark} />;

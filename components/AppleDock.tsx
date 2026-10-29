@@ -22,7 +22,7 @@ export const AppleDock: React.FC<AppleDockProps> = ({ visible, onNavigate, toggl
   const items = [
     { title: 'Home', icon: HomeIcon, onClick: () => { triggerHaptic(); onNavigate('home'); } },
     { title: 'GitHub', icon: GithubIcon, onClick: () => { triggerHaptic(); window.open('https://github.com', '_blank'); } },
-    { title: 'Articles', icon: ArticleIcon, onClick: () => { triggerHaptic(); onNavigate('blogs'); } },
+    { title: 'Essays', icon: ArticleIcon, onClick: () => { triggerHaptic(); onNavigate('blogs'); } },
     { title: 'Twitter', icon: TwitterXIcon, onClick: () => { triggerHaptic(); window.open('https://twitter.com', '_blank'); } },
     {
       title: isDark ? 'Light Mode' : 'Dark Mode',
@@ -55,11 +55,12 @@ export const AppleDock: React.FC<AppleDockProps> = ({ visible, onNavigate, toggl
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ y: 150, opacity: 0, x: "-50%" }}
-          animate={{ y: 0, opacity: 1, x: "-50%" }}
-          exit={{ y: 150, opacity: 0, x: "-50%" }}
-          transition={{ type: "spring", stiffness: 250, damping: 25 }}
-          className="fixed bottom-6 left-1/2 z-50 w-max max-w-[90vw]" // Ensure it doesn't overflow horizontally on very small screens
+          // Rises from the edge it lives on, and returns the same way
+          initial={{ y: 24, opacity: 0, scale: 0.96, x: "-50%", filter: "blur(6px)" }}
+          animate={{ y: 0, opacity: 1, scale: 1, x: "-50%", filter: "blur(0px)", transition: { type: "spring", duration: 0.5, bounce: 0.12 } }}
+          exit={{ y: 24, opacity: 0, scale: 0.97, x: "-50%", filter: "blur(6px)", transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
+          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          className="fixed left-1/2 z-50 w-max max-w-[90vw]" // Ensure it doesn't overflow horizontally on very small screens
         >
           <div
             className={cn(

@@ -1,9 +1,8 @@
-import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
-import { DynamicNavigation } from './DynamicNavigation';
-import { PageVisitsFooter } from './PageVisitsFooter';
-import { PixelCard } from './PixelCard';
+import React from 'react';
+import { PageShell, PageHeader } from './ui/PageShell';
+import { ProjectBento, type BentoProject } from './ui/ProjectBento';
+import { AmicroVisual, OxygenVisual, MonochartsVisual, CardioEnsembleVisual, AmacroVisual, AizenVerseVisual } from './ui/ProjectVisuals';
+import { useGithubStars, AMICRO_REPO, AMICRO_STARS } from '../lib/stars';
 
 interface ProjectsPageProps {
     onNavigate: (view: string) => void;
@@ -11,123 +10,25 @@ interface ProjectsPageProps {
     isDark: boolean;
 }
 
-const PROJECTS = [
-    {
-        title: "Shinrai",
-        desc: "A Cloud-Native Platform designed for high-scale enterprise deployments. Implements automated CI/CD pipelines using AWS CodePipeline and Docker.",
-        tags: ["AWS", "Docker", "Kubernetes", "React"],
-        image: "https://picsum.photos/seed/shinrai/600/400"
-    },
-    {
-        title: "Aizen Verse",
-        desc: "Modern Anime Streaming Platform featuring adaptive HLS streaming, real-time user chat, and a recommendation engine built with Python.",
-        tags: ["React", "Vite", "Python", "HLS"],
-        image: "https://picsum.photos/seed/aizen/600/400"
-    },
-    {
-        title: "NO₂ Prediction System",
-        desc: "Machine Learning driven system utilizing LSTM networks to predict Nitrogen Dioxide levels in urban environments with 94% accuracy.",
-        tags: ["Python", "TensorFlow", "Flask", "Data Sci"],
-        image: "https://picsum.photos/seed/no2/600/400"
-    },
-    {
-        title: "Liquid UI",
-        desc: "An experimental UI library focusing on fluid, physics-based interactions using Framer Motion and WebGL shaders.",
-        tags: ["TypeScript", "WebGL", "Framer Motion"],
-        image: "https://picsum.photos/seed/liquid/600/400"
-    },
-    {
-        title: "Echo Analytics",
-        desc: "Real-time dashboard for visualizing social media sentiment analysis. Processes thousands of tweets per second.",
-        tags: ["Next.js", "D3.js", "Redis"],
-        image: "https://picsum.photos/seed/echo/600/400"
-    }
+const PROJECTS: BentoProject[] = [
+    { name: 'Amicro', detail: 'Micro-interactions for React. {stars} stars, Vercel OSS ’26.', href: 'https://amicro.dev', media: <AmicroVisual /> },
+    { name: 'Oxygen UI', detail: 'Solana UI primitives.', href: 'https://oxygenui.xyz', media: <OxygenVisual /> },
+    { name: 'Monocharts', detail: 'Monochrome charts for React. 189 stars.', href: 'https://github.com/Subhan-code/Monocharts', media: <MonochartsVisual /> },
+    { name: 'Aizen Verse', detail: 'Anime streaming with watch parties.', href: 'https://aizen-verse.vercel.app/', media: <AizenVerseVisual /> },
+    { name: 'Amacro', detail: 'Page transitions for React.', href: 'https://github.com/Subhan-code/Amacro', media: <AmacroVisual /> },
+    { name: 'CardioEnsemble', detail: 'Heart disease risk model.', href: 'https://github.com/Subhan-code/CardioEnsemble', media: <CardioEnsembleVisual /> },
 ];
 
-export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate, toggleTheme, isDark }) => {
-    const triggerRef = useRef<HTMLDivElement>(null);
-
+export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate }) => {
+    // Amicro's star count is live from GitHub
+    const stars = useGithubStars(AMICRO_REPO, AMICRO_STARS);
+    const projects = PROJECTS.map((p) => ({ ...p, detail: p.detail.replace('{stars}', stars) }));
     return (
-        <>
-            <DynamicNavigation
-                triggerRef={triggerRef}
-                toggleTheme={toggleTheme}
-                isDark={isDark}
-                onNavigate={onNavigate}
-                currentView="projects"
-                enableIsland={false}
-            />
-
-            <main className="px-6 pt-32 md:pt-48 pb-4 relative z-10 max-w-5xl mx-auto min-h-screen">
-
-                {/* Header */}
-                <div ref={triggerRef} className="mb-20">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="text-5xl md:text-8xl font-serif text-gray-900 dark:text-white mb-6"
-                    >
-                        Selected Work
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl font-light"
-                    >
-                        A collection of projects exploring the intersection of design, engineering, and data science.
-                    </motion.p>
-                </div>
-
-                {/* Projects Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16 mb-8">
-                    {PROJECTS.map((project, index) => (
-                        <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 40 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.1 + (index * 0.1) }}
-                            className="group cursor-pointer"
-                        >
-                            <div className="relative aspect-[4/3] mb-6 overflow-hidden rounded-2xl bg-gray-100 dark:bg-[#111]">
-                                <PixelCard
-                                    image={project.image}
-                                    title={project.title}
-                                    desc={project.desc}
-                                    tags={project.tags}
-                                    className="w-full h-full"
-                                />
-
-                                <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/80 backdrop-blur-sm p-2 rounded-full opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 z-30 pointer-events-none">
-                                    <ArrowUpRight className="w-5 h-5 text-black dark:text-white" />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-baseline">
-                                    <h3 className="text-2xl font-serif font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        {project.title}
-                                    </h3>
-                                    <div className="flex gap-2">
-                                        {project.tags.slice(0, 2).map(tag => (
-                                            <span key={tag} className="text-[10px] uppercase font-bold tracking-widest text-gray-400 border border-gray-200 dark:border-white/10 px-2 py-1 rounded-md">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
-                                    {project.desc}
-                                </p>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-
-                <PageVisitsFooter />
-
-            </main>
-        </>
+        <PageShell onBack={() => onNavigate('home')}>
+            <PageHeader title="Projects" subtitle="Open-source libraries, tools and products." />
+            <div className="pb-20">
+                <ProjectBento projects={projects} />
+            </div>
+        </PageShell>
     );
 };

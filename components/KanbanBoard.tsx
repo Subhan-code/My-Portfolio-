@@ -11,7 +11,8 @@ import {
     DragStartEvent,
     DropAnimation,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     useSensor,
     useSensors,
 } from "@dnd-kit/core";
@@ -26,7 +27,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
     Clock,
-    Filter,
     MessageSquare,
     MoreHorizontal,
     Paperclip,
@@ -36,6 +36,12 @@ import {
     X
 } from "lucide-react";
 import React, { useMemo, useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { triggerHaptic } from "../lib/utils";
+
+// Drag motion: the iOS sheet curve for gliding home, and the lifted pose it settles from
+const SETTLE = "cubic-bezier(0.32, 0.72, 0, 1)";
+const LIFT = "scale(1.04) rotate(1.5deg)";
 
 // --- Inline UI Components ---
 
@@ -154,6 +160,23 @@ const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
 AvatarFallback.displayName = "AvatarFallback"
 
 
+// --- Style tokens (match the rest of the site) ---
+
+// 16px on touch so iOS never zooms into the field
+const FIELD = "w-full h-10 rounded-[12px] bg-white/[0.04] ring-1 ring-inset ring-white/[0.08] px-3.5 text-[16px] sm:text-[14px] text-neutral-50 placeholder:text-[#a1a1a1] outline-none focus:ring-white/25 transition-shadow";
+const LABEL = "block text-[12px] text-[#a1a1a1]";
+const PRIORITY_DOT = {
+    low: "bg-sky-400",
+    medium: "bg-amber-400",
+    high: "bg-red-400",
+} as const;
+// Tinted pill: soft fill, matching hairline, readable text
+const PRIORITY_PILL = {
+    low: "bg-sky-400/10 text-sky-300 ring-sky-400/20",
+    medium: "bg-amber-400/10 text-amber-300 ring-amber-400/20",
+    high: "bg-red-400/10 text-red-300 ring-red-400/20",
+} as const;
+
 // --- Types ---
 
 type Id = string | number;
@@ -214,23 +237,21 @@ const initialTasks: Task[] = [
 
 // --- Components ---
 
+// Mounted only while open (see parent), so its hooks always run and its fields
+// start from the task being edited every time.
 function TaskModal({
-    isOpen,
     onClose,
     onSave,
     task,
     columnId,
     onDelete
 }: {
-    isOpen: boolean,
     onClose: () => void,
     onSave: (task: Partial<Task>) => void,
     task?: Task | null,
     columnId?: Id,
     onDelete?: (id: Id) => void
 }) {
-    if (!isOpen) return null;
-
     const [content, setContent] = useState(task?.content || "");
     const [description, setDescription] = useState(task?.description || "");
     const [priority, setPriority] = useState<"low" | "medium" | "high">(task?.priority || "medium");
@@ -264,82 +285,84 @@ function TaskModal({
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/10">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {task ? "Edit Task" : "New Task"}
+        // Bottom sheet on phones, centred dialog from sm up
+        <div
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-label={task ? "Edit task" : "New task"}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full sm:max-w-[420px] max-h-[90dvh] overflow-y-auto overscroll-contain bg-[#141414] rounded-t-[22px] sm:rounded-[22px] ring-1 ring-white/[0.08] shadow-2xl pb-[env(safe-area-inset-bottom)] font-sans"
+            >
+                <div className="flex items-center justify-between px-5 pt-5 pb-2">
+                    <h2 className="text-[17px] leading-[24px] font-semibold text-neutral-50">
+                        {task ? "Edit task" : "New task"}
                     </h2>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
+                    <button type="button" onClick={onClose} aria-label="Close" className="w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-[#a1a1a1] hover:text-white hover:bg-white/[0.06] transition-colors">
                         <X className="h-4 w-4" />
-                    </Button>
+                    </button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
-                        <Input
-                            value={content}
-                            onChange={e => setContent(e.target.value)}
-                            placeholder="Task title..."
-                            required
-                            className="bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border-gray-200 dark:border-white/10"
-                        />
-                    </div>
+                <form onSubmit={handleSubmit} className="px-5 pb-5 pt-2 space-y-4">
+                    <label className="block space-y-1.5">
+                        <span className={LABEL}>Title</span>
+                        <input value={content} onChange={e => setContent(e.target.value)} placeholder="What needs doing?" required className={FIELD} />
+                    </label>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                        <Textarea
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
-                            placeholder="Add details..."
-                            className="bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border-gray-200 dark:border-white/10"
-                        />
-                    </div>
+                    <label className="block space-y-1.5">
+                        <span className={LABEL}>Description</span>
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Add details" rows={3} className={cn(FIELD, "h-auto py-2.5 resize-none")} />
+                    </label>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
-                            <select
-                                value={priority}
-                                onChange={e => setPriority(e.target.value as any)}
-                                className="w-full h-9 rounded-md border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-gray-900 dark:text-white"
-                            >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
-                            <Input
-                                value={tagInput}
-                                onChange={e => setTagInput(e.target.value)}
-                                onKeyDown={handleAddTag}
-                                placeholder="Type & Enter..."
-                                className="bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border-gray-200 dark:border-white/10"
-                            />
+                    <div className="space-y-1.5">
+                        <span className={LABEL}>Priority</span>
+                        {/* Segmented control instead of a select: one tap, always visible */}
+                        <div role="radiogroup" aria-label="Priority" className="grid grid-cols-3 p-0.5 rounded-full bg-white/[0.04] ring-1 ring-inset ring-white/[0.06]">
+                            {(["low", "medium", "high"] as const).map((p) => (
+                                <button
+                                    key={p}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={priority === p}
+                                    onClick={() => setPriority(p)}
+                                    className={cn(
+                                        "h-8 rounded-full text-[13px] capitalize inline-flex items-center justify-center gap-1.5 transition-colors",
+                                        priority === p ? "bg-white/[0.12] text-neutral-50" : "text-[#a1a1a1] hover:text-white"
+                                    )}
+                                >
+                                    <span className={cn("w-1.5 h-1.5 rounded-full", PRIORITY_DOT[p])} />
+                                    {p}
+                                </button>
+                            ))}
                         </div>
                     </div>
+
+                    <label className="block space-y-1.5">
+                        <span className={LABEL}>Tags</span>
+                        <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleAddTag} enterKeyHint="done" placeholder="Type and press Enter" className={FIELD} />
+                    </label>
 
                     {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5">
                             {tags.map(tag => (
-                                <Badge key={tag} variant="secondary" className="cursor-pointer hover:bg-red-100 hover:text-red-600" onClick={() => removeTag(tag)}>
-                                    {tag} ×
-                                </Badge>
+                                <button key={tag} type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`} className="h-7 px-2.5 rounded-full bg-white/[0.06] text-[12px] text-[#a1a1a1] hover:text-white hover:bg-white/[0.1] transition-colors">
+                                    {tag} <span aria-hidden className="text-[#a1a1a1]">×</span>
+                                </button>
                             ))}
                         </div>
                     )}
 
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-2 pt-2">
                         {task && onDelete && (
-                            <Button type="button" variant="destructive" onClick={() => { onDelete(task.id); onClose(); }}>
+                            <button type="button" aria-label="Delete task" onClick={() => { onDelete(task.id); onClose(); }} className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center bg-white/[0.06] text-[#a1a1a1] hover:text-red-400 hover:bg-red-500/10 transition-colors">
                                 <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </button>
                         )}
-                        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                            {task ? "Save Changes" : "Create Task"}
-                        </Button>
+                        <button type="submit" className="flex-1 h-10 rounded-full bg-white text-black text-[14px] font-medium hover:bg-white/90 transition-colors">
+                            {task ? "Save changes" : "Create task"}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -383,20 +406,20 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [targetColumnId, setTargetColumnId] = useState<Id>("todo");
 
-    // Set page title
+    // Set page title, and hand the previous one back on the way out
     useEffect(() => {
-        document.title = "Kanban | Portfolio";
+        const previous = document.title;
+        document.title = "Kanban | Syed Subhan";
         return () => {
-            document.title = "Portfolio | Creative Developer";
+            document.title = previous;
         };
     }, []);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 3, // 3px movement required before drag starts
-            },
-        }),
+        // Mouse: drag after 3px of movement
+        useSensor(MouseSensor, { activationConstraint: { distance: 3 } }),
+        // Touch: press and hold briefly, so a normal swipe still scrolls the board
+        useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -452,6 +475,7 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
     // --- DnD Handlers ---
 
     function onDragStart(event: DragStartEvent) {
+        triggerHaptic(8); // the pick-up tick
         if (event.active.data.current?.type === "Column") {
             setActiveColumn(event.active.data.current.column);
             return;
@@ -499,7 +523,6 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
                 const activeIndex = tasks.findIndex((t) => t.id === activeId);
 
                 tasks[activeIndex].columnId = overId;
-                console.log("DROPPING TASK OVER COLUMN", { activeIndex });
                 return arrayMove(tasks, activeIndex, activeIndex);
             });
         }
@@ -511,6 +534,7 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
 
         const { active, over } = event;
         if (!over) return;
+        triggerHaptic([4, 24, 6]); // a softer double tap as it lands
 
         const activeId = active.id;
         const overId = over.id;
@@ -527,79 +551,83 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
         }
     }
 
+    // Drop: glide home on the iOS sheet curve while the lifted card settles flat again
     const dropAnimation: DropAnimation = {
-        sideEffects: defaultDropAnimationSideEffects({
-            styles: {
-                active: {
-                    opacity: "0.5",
-                },
-            },
-        }),
+        duration: 280,
+        easing: SETTLE,
+        sideEffects: (args) => {
+            const cleanup = defaultDropAnimationSideEffects({ styles: { active: { opacity: "0" } } })(args);
+            const lifted = args.dragOverlay.node.firstElementChild as HTMLElement | null;
+            lifted?.animate(
+                [{ transform: LIFT }, { transform: 'none' }],
+                { duration: 280, easing: SETTLE, fill: 'forwards' }
+            );
+            return cleanup;
+        },
     };
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col gap-6 overflow-hidden bg-background p-6 pt-24">
+        <div className="relative flex min-h-[100dvh] w-full max-w-[1280px] mx-auto flex-col gap-5 overflow-x-clip bg-black text-neutral-50 font-sans px-4 sm:px-6 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
             {/* Modal */}
-            <TaskModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={editingTask ? handleUpdateTask : handleCreateTask}
-                task={editingTask}
-                columnId={targetColumnId}
-                onDelete={handleDeleteTask}
-            />
-
-            {/* Glassmorphism background blobs */}
-            <div className="absolute inset-0 -z-10 pointer-events-none">
-                <div className="absolute left-1/2 top-0 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-foreground/[0.035] blur-[140px]" />
-                <div className="absolute bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-foreground/[0.025] blur-[120px]" />
-                <div className="absolute top-1/2 left-1/4 h-[400px] w-[400px] rounded-full bg-primary/[0.02] blur-[150px]" />
-            </div>
-
-            {/* Back Button */}
-            {onNavigate && (
-                <Button
-                    variant="ghost"
-                    onClick={() => onNavigate('home')}
-                    className="w-fit gap-2 -ml-2 text-muted-foreground hover:text-foreground mb-[-10px] z-20 text-black dark:text-white"
-                >
-                    ← Back to Portfolio
-                </Button>
+            {isModalOpen && (
+                <TaskModal
+                    key={editingTask?.id ?? `new-${targetColumnId}`}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={editingTask ? handleUpdateTask : handleCreateTask}
+                    task={editingTask}
+                    columnId={targetColumnId}
+                    onDelete={handleDeleteTask}
+                />
             )}
 
-            {/* Header */}
-            <div className="relative flex flex-col gap-4 rounded-2xl border border-border/40 bg-background/60 p-6 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-foreground/[0.04] via-transparent to-transparent opacity-60 pointer-events-none" />
-                <div className="relative z-10">
-                    <h1 className="text-3xl font-semibold tracking-tight text-foreground text-black dark:text-white">
-                        Kanban Board
+            {/* Back pill — same as every inner page */}
+            {onNavigate && (
+                <div className="h-14 flex items-center">
+                    <button
+                        type="button"
+                        onClick={() => onNavigate('home')}
+                        className="inline-flex items-center gap-1.5 h-10 pl-3 pr-4 rounded-full bg-[#1c1c1c] text-[14px] text-[#a1a1a1] hover:text-white hover:bg-[#242424] transition-colors"
+                    >
+                        <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="m12.5 4.75-5 5.25 5 5.25" />
+                        </svg>
+                        Syed Subhan
+                    </button>
+                </div>
+            )}
+
+            {/* Header: title on the left, search + new task on the right. No box. */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between pt-4 pb-2">
+                <div className="min-w-0">
+                    <h1 className="font-sans text-[28px] leading-[34px] md:text-[32px] md:leading-[40px] font-bold text-neutral-50">
+                        Kanban
                     </h1>
-                    <p className="text-muted-foreground text-sm md:text-base max-w-2xl text-black/60 dark:text-white/60">
-                        Efficiently organize tasks, visualize your workflow, and manage projects with ease using this interactive board.
+                    <p className="mt-1 text-[14px] leading-[22px] text-[#a1a1a1]">
+                        {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} across {columns.length} columns. Drag to reorder.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-foreground/40" />
-                        <Input
-                            placeholder="Search tasks..."
-                            className="w-[200px] pl-9 bg-background/60 border-border/50 backdrop-blur-md focus:bg-background/80 focus:border-border/70 transition-all text-black dark:text-white"
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 md:flex-none min-w-0">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#a1a1a1] pointer-events-none" />
+                        <input
+                            type="search"
+                            enterKeyHint="search"
+                            aria-label="Search tasks"
+                            placeholder="Search"
+                            className="w-full md:w-[220px] h-10 rounded-full bg-[#171717] ring-1 ring-inset ring-white/[0.06] pl-10 pr-4 text-[16px] sm:text-[14px] text-neutral-50 placeholder:text-[#a1a1a1] outline-none focus:ring-white/20 transition-shadow"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="bg-background/60 border-border/50 backdrop-blur-md hover:bg-background/80 text-black dark:text-white"
+                    <button
+                        type="button"
+                        onClick={() => openForCreate()}
+                        aria-label="New task"
+                        className="h-10 shrink-0 inline-flex items-center gap-1.5 px-3.5 sm:px-4 rounded-full bg-white text-black text-[14px] font-medium hover:bg-white/90 transition-colors"
                     >
-                        <Filter className="h-4 w-4 text-foreground/70" />
-                    </Button>
-                    <Button onClick={() => openForCreate()} className="gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-primary/20">
                         <Plus className="h-4 w-4" />
-                        New Task
-                    </Button>
+                        <span className="hidden sm:inline">New task</span>
+                    </button>
                 </div>
             </div>
 
@@ -611,7 +639,8 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
                 onDragOver={onDragOver}
                 onDragEnd={onDragEnd}
             >
-                <div className="flex h-full gap-6 overflow-x-auto pb-4">
+                {/* Phones/tablets: swipe column by column. Wide screens: all four columns fit. */}
+                <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory overscroll-x-contain scroll-px-4 -mx-4 px-4 sm:-mx-6 sm:px-6 xl:mx-0 xl:px-0 xl:overflow-visible pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <SortableContext
                         items={columnsId}
                         strategy={horizontalListSortingStrategy}
@@ -637,7 +666,17 @@ export function KanbanBoard({ onNavigate }: { onNavigate?: (view: string) => voi
                             isOverlay
                         />
                     )}
-                    {activeTask && <TaskCard task={activeTask} isOverlay />}
+                    {/* Picked up: the card lifts toward you with a little spring and tilt */}
+                    {activeTask && (
+                        <motion.div
+                            initial={{ scale: 1, rotate: 0 }}
+                            animate={{ scale: 1.04, rotate: 1.5 }}
+                            transition={{ type: 'spring', duration: 0.35, bounce: 0.3 }}
+                            className="rounded-[16px] shadow-[0_24px_48px_rgba(0,0,0,0.6)]"
+                        >
+                            <TaskCard task={activeTask} isOverlay />
+                        </motion.div>
+                    )}
                 </DragOverlay>
             </DndContext>
         </div>
@@ -680,54 +719,50 @@ function BoardColumn({ column, tasks, isOverlay, onAddTask, onEditTask }: BoardC
             ref={setNodeRef}
             style={style}
             className={cn(
-                "group/column relative flex h-full w-[350px] min-w-[350px] flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/50 backdrop-blur-xl shadow-lg pb-4",
-                isDragging && "opacity-50",
-                isOverlay &&
-                "rotate-2 scale-105 shadow-2xl cursor-grabbing bg-background/70"
+                // A quiet lane: barely-there fill, no border, no shadow
+                "relative flex flex-col rounded-[22px] bg-white/[0.025] p-2",
+                // 85% of the screen on phones (next column peeks in), fixed on tablets, flexible on desktop
+                "w-[85vw] max-w-[320px] shrink-0 snap-center sm:w-[290px] xl:w-auto xl:max-w-none xl:flex-1 xl:min-w-0 xl:[scroll-snap-align:none]",
+                isDragging && "bg-transparent outline-dashed outline-1 -outline-offset-1 outline-white/[0.1] [&>*]:invisible",
+                isOverlay && "ring-1 ring-white/10 bg-[#111] shadow-2xl cursor-grabbing"
             )}
         >
-            {/* Gradient overlay for column */}
-            <div className="absolute inset-0 bg-gradient-to-br from-foreground/[0.03] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover/column:opacity-100 pointer-events-none" />
-
-            {/* Column Header */}
+            {/* Column header doubles as the drag handle */}
             <div
                 {...attributes}
                 {...listeners}
-                className="relative z-10 flex items-center justify-between border-b border-border/30 bg-background/30 p-4 backdrop-blur-sm cursor-grab active:cursor-grabbing"
+                className="flex items-center justify-between px-3 pt-2 pb-3 cursor-grab active:cursor-grabbing touch-manipulation"
             >
-                <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-xs font-bold text-blue-600 dark:text-blue-400 shadow-sm shadow-primary/20 backdrop-blur-sm">
-                        {tasks.length}
-                    </div>
-                    <h3 className="font-semibold text-foreground text-black dark:text-white">{column.title}</h3>
+                <div className="flex items-baseline gap-2">
+                    <h3 className="font-sans text-[14px] font-medium text-neutral-50">{column.title}</h3>
+                    <span className="text-[12px] text-[#a1a1a1] tabular-nums">{tasks.length}</span>
                 </div>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-foreground/40 hover:text-foreground hover:bg-background/50 text-black dark:text-white"
+                <button
+                    type="button"
+                    onClick={onAddTask}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    aria-label={`Add task to ${column.title}`}
+                    className="w-7 h-7 -mr-1 rounded-full flex items-center justify-center text-[#a1a1a1] hover:text-white hover:bg-white/[0.06] transition-colors"
                 >
-                    <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                    <Plus className="h-4 w-4" />
+                </button>
             </div>
 
-            {/* Column Content */}
-            <div className="relative z-10 flex flex-1 flex-col gap-3 p-3 min-h-[100px]">
-                <SortableContext
-                    items={tasksIds}
-                    strategy={verticalListSortingStrategy}
-                >
+            <div className="flex flex-1 flex-col gap-2 min-h-[88px]">
+                <SortableContext items={tasksIds} strategy={verticalListSortingStrategy}>
                     {tasks.map((task) => (
                         <TaskCard key={task.id} task={task} onClick={() => onEditTask?.(task)} />
                     ))}
                 </SortableContext>
-                <Button
-                    variant="ghost"
-                    onClick={onAddTask}
-                    className="w-full justify-start gap-2 border border-dashed border-border/30 text-foreground/60 hover:text-foreground hover:bg-background/60 hover:border-border/50 backdrop-blur-sm text-gray-500"
-                >
-                    <Plus className="h-4 w-4" />
-                    Add Task
-                </Button>
+                {tasks.length === 0 && (
+                    <button
+                        type="button"
+                        onClick={onAddTask}
+                        className="flex-1 min-h-[88px] rounded-[16px] border border-dashed border-white/[0.08] text-[12px] text-[#a1a1a1] hover:text-neutral-50 hover:border-white/15 transition-colors"
+                    >
+                        Drop a task here
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -753,18 +788,13 @@ function TaskCard({ task, isOverlay, onClick }: TaskCardProps) {
             type: "Task",
             task,
         },
+        // Neighbours make room on the same curve the drop uses
+        transition: { duration: 260, easing: SETTLE },
     });
 
     const style = {
         transition,
         transform: CSS.Translate.toString(transform),
-    };
-
-    const priorityColors = {
-        low: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-        medium:
-            "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-        high: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
     };
 
     return (
@@ -775,68 +805,41 @@ function TaskCard({ task, isOverlay, onClick }: TaskCardProps) {
             {...listeners}
             onClick={onClick}
             className={cn(
-                "group relative flex cursor-grab flex-col gap-3 overflow-hidden rounded-xl border border-border/40 bg-white/40 dark:bg-black/40 p-4 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-border/80 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white/60 dark:hover:bg-black/60 hover:-translate-y-1 active:cursor-grabbing hover:scale-[1.02]",
-                isDragging && "opacity-30",
-                isOverlay &&
-                "rotate-2 scale-105 shadow-2xl cursor-grabbing opacity-100 bg-white/90 dark:bg-black/90 backdrop-blur-xl z-50 text-black dark:text-white ring-1 ring-border"
+                // Same surface as every card on the site
+                "group relative flex flex-col gap-2 cursor-grab rounded-[16px] bg-[#171717] ring-1 ring-inset ring-white/[0.05] p-4 transition-[background-color,scale] duration-150 ease-out hover:bg-[#1c1c1c] active:scale-[0.985] active:cursor-grabbing touch-manipulation select-none",
+                // Where the card came from: an empty slot the same size, not a faded copy
+                isDragging && "bg-transparent ring-0 outline-dashed outline-1 -outline-offset-1 outline-white/[0.12] [&>*]:invisible",
+                isOverlay && "cursor-grabbing bg-[#1e1e1e] ring-white/15"
             )}
         >
-            {/* Gradient overlay for card */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
-
-            {/* Header / Tags */}
-            <div className="relative z-10 flex items-start justify-between">
-                <div className="flex flex-wrap gap-1.5">
-                    <Badge
-                        variant="outline"
-                        className={cn(
-                            "border px-1.5 py-0.5 text-[10px] uppercase tracking-wider backdrop-blur-sm",
-                            priorityColors[task.priority]
-                        )}
-                    >
-                        {task.priority}
-                    </Badge>
-                    {task.tags.map((tag) => (
-                        <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="bg-gray-200/50 dark:bg-white/10 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 text-[10px] backdrop-blur-sm border-none"
-                        >
-                            {tag}
-                        </Badge>
-                    ))}
-                </div>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 text-black dark:text-white"
-                >
-                    <MoreHorizontal className="h-3 w-3" />
-                </Button>
+            {/* Priority and tags as rounded pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+                <span className={cn("inline-flex items-center gap-1 h-[22px] px-2 rounded-full text-[11px] font-medium capitalize ring-1 ring-inset", PRIORITY_PILL[task.priority])}>
+                    <span className={cn("w-1.5 h-1.5 rounded-full", PRIORITY_DOT[task.priority])} />
+                    {task.priority}
+                </span>
+                {task.tags.map((tag) => (
+                    <span key={tag} className="inline-flex items-center h-[22px] px-2 rounded-full bg-white/[0.06] text-[11px] font-medium text-[#a1a1a1]">
+                        {tag}
+                    </span>
+                ))}
             </div>
 
-            {/* Content */}
-            <p className="relative z-10 text-sm font-medium text-black dark:text-white leading-relaxed">
+            <p className="text-[14px] leading-[20px] font-medium text-neutral-50">
                 {task.content}
             </p>
 
-            {/* Description (Truncated) */}
             {task.description && (
-                <p className="relative z-10 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                <p className="text-[12px] leading-[18px] text-[#a1a1a1] line-clamp-2">
                     {task.description}
                 </p>
             )}
 
             {/* Footer */}
-            <div className="relative z-10 flex items-center justify-between pt-1">
-                <div className="flex items-center gap-3 text-xs text-black/50 dark:text-white/50">
+            <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-3 text-[12px] text-[#a1a1a1]">
                     {task.dueDate && (
-                        <div
-                            className={cn(
-                                "flex items-center gap-1",
-                                task.priority === "high" && "text-red-500/80"
-                            )}
-                        >
+                        <div className={cn("flex items-center gap-1", task.priority === "high" && "text-red-400/80")}>
                             <Clock className="h-3 w-3" />
                             <span>{task.dueDate}</span>
                         </div>
@@ -863,9 +866,9 @@ function TaskCard({ task, isOverlay, onClick }: TaskCardProps) {
                 {task.assignees.length > 0 && (
                     <div className="flex -space-x-2">
                         {task.assignees.map((avatar, i) => (
-                            <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                                <AvatarImage src={avatar} />
-                                <AvatarFallback className="text-[8px] bg-blue-500/10 text-blue-500">
+                            <Avatar key={i} className="h-5 w-5 ring-2 ring-[#171717]">
+                                <AvatarImage src={avatar} alt="" />
+                                <AvatarFallback className="text-[8px] bg-white/10 text-[#a1a1a1]">
                                     U{i + 1}
                                 </AvatarFallback>
                             </Avatar>

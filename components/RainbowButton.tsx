@@ -14,7 +14,7 @@ export function RainbowButton({ children, className, onClick, ...props }: Rainbo
   return (
     <button
       className={cn(
-        "group relative inline-flex items-center justify-center rounded-xl p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 transition-transform active:scale-95", 
+        "group relative inline-flex items-center justify-center rounded-xl p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 transition-transform active:scale-[0.97]", 
         className
       )}
       onClick={(e) => {

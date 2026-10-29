@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, Server, Globe, Box, Cpu } from 'lucide-react';
+import { ChevronLeft, Clock, Server, Globe, Box, Cpu } from 'lucide-react';
 import { triggerHaptic } from '../../lib/utils';
 
 export default function NextJsOptimization({ onBack }: { onBack: () => void }) {
@@ -17,7 +17,7 @@ export default function NextJsOptimization({ onBack }: { onBack: () => void }) {
                 onClick={() => { triggerHaptic(5); onBack(); }}
                 className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors mb-12 group"
             >
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 Back to home
             </button>
 
@@ -30,10 +30,10 @@ export default function NextJsOptimization({ onBack }: { onBack: () => void }) {
                         <Clock size={14} /> 5 min read
                     </span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-serif font-medium text-gray-900 dark:text-white mb-6 leading-tight">
+                <h1 className="text-4xl md:text-5xl font-medium text-gray-900 dark:text-white mb-6 leading-tight">
                     Next.js for the Performance Obsessed
                 </h1>
-                <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed font-serif italic">
+                <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed italic">
                     Mastering the transition from Client-Side Rendering to Server-First architecture.
                 </p>
             </header>
@@ -54,12 +54,12 @@ export default function NextJsOptimization({ onBack }: { onBack: () => void }) {
                 <div className="my-10 grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
                     <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
                         <Globe className="text-emerald-500 mb-4" size={24} />
-                        <h4 className="text-lg font-serif mb-2">Streaming</h4>
+                        <h4 className="text-lg mb-2">Streaming</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Breaking down page renders into chunks so users see content as it becomes available.</p>
                     </div>
                     <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
                         <Cpu className="text-purple-500 mb-4" size={24} />
-                        <h4 className="text-lg font-serif mb-2">Selective Hydration</h4>
+                        <h4 className="text-lg mb-2">Selective Hydration</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Interactivity is applied only where it's needed, keeping the main thread clear for immediate response.</p>
                     </div>
                 </div>
