@@ -28,4 +28,4 @@ Once the code is on GitHub, deploying to Vercel is seamless:
 ## Requirements Met
 - **Vite/React**: Configured for high-performance production builds.
 - **Environment Variables**: If you have any sensitive keys in `.env.local`, make sure to add them in the Vercel Project Settings.
-- **Assets**: All videos and icons are properly bundled for production.
+- **Assets**: All images and icons are properly bundled for production.

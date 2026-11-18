@@ -66,18 +66,28 @@ export const AmacroVisual = () => (
 export const OxygenVisual = () => <Cover src="/projects/oxygen-ui.jpg" alt="Oxygen UI: Solana components for modern apps" />;
 
 export const AizenVerseVisual = () => (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#08080c] select-none text-white overflow-hidden">
-        <video
-            src="/videos/aizen-verse.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-85 transition-opacity duration-500"
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3.5 bg-[#0a0714] text-white select-none p-6 overflow-hidden">
+        {/* Subtle ambient purple glow */}
+        <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(168,85,247,0.18),transparent_65%)] pointer-events-none group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
-        <p className="relative z-10 font-sans text-[clamp(1.4rem,5.5vw,2rem)] font-bold leading-none text-white drop-shadow-md">
-            Aizen <span className="text-purple-400">Verse</span>
-        </p>
+
+        <div className="relative z-10 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse shadow-[0_0_8px_rgba(192,132,252,0.8)]" />
+            <p className="font-sans text-[clamp(1.4rem,5.5vw,2rem)] font-bold leading-none tracking-tight">
+                Aizen <span className="text-purple-400">Verse</span>
+            </p>
+        </div>
+
+        {/* Minimalist streaming audio / watch party waves */}
+        <div className="relative z-10 flex items-center justify-center gap-1 h-5 w-24">
+            <span className="w-1 bg-purple-400/30 rounded-full h-[30%] group-hover:h-[75%] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+            <span className="w-1 bg-purple-400/50 rounded-full h-[60%] group-hover:h-[40%] transition-all duration-500 delay-75 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+            <span className="w-1 bg-purple-400/80 rounded-full h-[90%] group-hover:h-[100%] transition-all duration-500 delay-100 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+            <span className="w-1 bg-purple-400 rounded-full h-[45%] group-hover:h-[90%] transition-all duration-500 delay-150 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+            <span className="w-1 bg-purple-400/70 rounded-full h-[75%] group-hover:h-[50%] transition-all duration-500 delay-200 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+            <span className="w-1 bg-purple-400/40 rounded-full h-[35%] group-hover:h-[80%] transition-all duration-500 delay-300 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+        </div>
     </div>
 );
